@@ -2141,6 +2141,12 @@ footer {
     margin-top: 4px;
     min-height: 18px;
     font-weight: 500;
+}/* Dashboard panels visibility control */
+.dashboard-panel {
+    display: none !important;
+}
+.dashboard-panel.active {
+    display: block !important;
 }
 
 /* --- DASHBOARD SHELL & GENERAL LAYOUT --- */
@@ -2767,6 +2773,190 @@ footer {
     color: var(--text-primary);
 }
 
+/* --- PREMIUM SAAS STYLES --- */
+.header-search-bar input {
+    transition: all var(--transition-fast);
+}
+
+.header-search-bar input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: var(--bg-secondary) !important;
+}
+
+/* Skeleton Shimmer Loading */
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--border-color) !important;
+    border-radius: var(--radius-md);
+    color: transparent !important;
+}
+
+.skeleton * {
+    visibility: hidden !important;
+}
+
+.skeleton::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 20%,
+        rgba(255, 255, 255, 0.5) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.5s infinite;
+    content: '';
+}
+
+body.dark-mode .skeleton::after {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 20%,
+        rgba(255, 255, 255, 0.12) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Charts & Graphs Styling */
+.chart-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.chart-line {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0px 6px 8px rgba(99, 102, 241, 0.3));
+}
+
+.chart-bar {
+    fill: var(--primary);
+    rx: 4;
+    transition: fill 0.3s;
+}
+
+.chart-bar:hover {
+    fill: var(--primary-dark);
+}
+
+.chart-grid-line {
+    stroke: var(--border-color);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.chart-axis-text {
+    fill: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Legend items */
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* Conversion Funnel */
+.funnel-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.funnel-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.funnel-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.funnel-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 1s ease-out;
+}
+
+/* Activity Feed */
+.activity-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.activity-details {
+    flex-grow: 1;
+    font-size: 0.85rem;
+}
+
+.activity-details strong {
+    color: var(--text-primary);
+}
+
+.activity-details p {
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.activity-details span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 4px;
+}
+
 /* --- DARK MODE ADJUSTMENTS --- */
 body.dark-mode .header-user-menu {
     background: var(--bg-secondary);
@@ -2795,6 +2985,10 @@ body.dark-mode .chat-bubble.bubble-them {
     }
     .dashboard-details-row {
         grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    .dashboard-charts-row {
+        grid-template-columns: 1fr !important;
         gap: 24px;
     }
 }

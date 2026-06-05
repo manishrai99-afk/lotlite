@@ -867,6 +867,12 @@ class AppState {
         this.siteVisits = [];
         this.chats = {};
         this.activeChatUserId = null;
+        
+        // Dynamic dashboard databases
+        this.recentSearches = [];
+        this.propertyAlerts = [];
+        this.followUps = [];
+        this.notifications = [];
 
         this.init();
     }
@@ -921,6 +927,38 @@ class AppState {
             this.chats = JSON.parse(savedChats);
         } else {
             this.seedChats();
+        }
+
+        // Load recent searches or seed defaults
+        const savedSearches = localStorage.getItem('lotlite_recent_searches_db');
+        if (savedSearches) {
+            this.recentSearches = JSON.parse(savedSearches);
+        } else {
+            this.seedRecentSearches();
+        }
+
+        // Load alerts or seed defaults
+        const savedAlerts = localStorage.getItem('lotlite_alerts_db');
+        if (savedAlerts) {
+            this.propertyAlerts = JSON.parse(savedAlerts);
+        } else {
+            this.seedPropertyAlerts();
+        }
+
+        // Load followups or seed defaults
+        const savedFollowUps = localStorage.getItem('lotlite_followups_db');
+        if (savedFollowUps) {
+            this.followUps = JSON.parse(savedFollowUps);
+        } else {
+            this.seedFollowUps();
+        }
+
+        // Load notifications or seed defaults
+        const savedNotifs = localStorage.getItem('lotlite_notifications_db');
+        if (savedNotifs) {
+            this.notifications = JSON.parse(savedNotifs);
+        } else {
+            this.seedNotifications();
         }
     }
 
@@ -1062,6 +1100,42 @@ class AppState {
             ]
         };
         localStorage.setItem('lotlite_chats_db', JSON.stringify(this.chats));
+    }
+
+    seedRecentSearches() {
+        this.recentSearches = [
+            { query: "3 BHK Apartment in Hinjawadi", type: "Apartment", budget: "₹80 Lakh - ₹1.2 Cr", date: "2026-06-05" },
+            { query: "2 BHK Ready Villa in Koregaon Park", type: "Villa", budget: "₹2.0 Cr - ₹3.5 Cr", date: "2026-06-04" },
+            { query: "Plot near Pune Airport", type: "Plot", budget: "Under ₹1.5 Cr", date: "2026-06-02" }
+        ];
+        localStorage.setItem('lotlite_recent_searches_db', JSON.stringify(this.recentSearches));
+    }
+
+    seedPropertyAlerts() {
+        this.propertyAlerts = [
+            { id: "alert-1", query: "2 & 3 BHK in Hinjawadi", minPrice: 6000000, maxPrice: 12000000, type: "Apartment", active: true, matches: 5 },
+            { id: "alert-2", query: "Villas in Koregaon Park", minPrice: 15000000, maxPrice: 40000000, type: "Villa", active: true, matches: 2 }
+        ];
+        localStorage.setItem('lotlite_alerts_db', JSON.stringify(this.propertyAlerts));
+    }
+
+    seedFollowUps() {
+        this.followUps = [
+            { id: "fu-1", leadName: "Devendra Joshi", task: "Send brochure and pricing sheet for Life Republic", dueDate: "Today", done: false, priority: "High" },
+            { id: "fu-2", leadName: "Rajiv Shah", task: "Follow up regarding home loan assistance options", dueDate: "Tomorrow", done: false, priority: "Medium" },
+            { id: "fu-3", leadName: "Preeti Patel", task: "Arrange meeting with owner of Sohna Road Villa", dueDate: "June 8", done: false, priority: "High" },
+            { id: "fu-4", leadName: "Anjali Gupta", task: "Confirm receipt of VTP Blue Waters quotation", dueDate: "Completed", done: true, priority: "Low" }
+        ];
+        localStorage.setItem('lotlite_followups_db', JSON.stringify(this.followUps));
+    }
+
+    seedNotifications() {
+        this.notifications = [
+            { id: "notif-1", title: "New Lead Received", text: "Rajiv Shah interested in Skyline Oasis", time: "10m ago", read: false },
+            { id: "notif-2", title: "Site Visit Confirmed", text: "Preeti Patel scheduled for Sohna Road Villa", time: "2h ago", read: false },
+            { id: "notif-3", title: "Property View Spike", text: "Your listings got 150 views today", time: "5h ago", read: true }
+        ];
+        localStorage.setItem('lotlite_notifications_db', JSON.stringify(this.notifications));
     }
 
     signup(name, email, phone, password, role) {
@@ -1329,34 +1403,50 @@ const UI = {
 
     // Render Search/Listings List & Map Pins
     renderListings() {
+        // 1. Standalone Search results page
         const resultsGrid = document.getElementById('listings-results-grid');
         const resultsCountEl = document.getElementById('results-count');
         const mapContainer = document.getElementById('map-pins-overlay');
         
-        if (!resultsGrid) return;
+        if (resultsGrid) {
+            const filtered = state.getFilteredProperties();
+            if (resultsCountEl) resultsCountEl.textContent = `${filtered.length} Properties found`;
 
-        const filtered = state.getFilteredProperties();
-        resultsCountEl.textContent = `${filtered.length} Properties found`;
-
-        if (filtered.length === 0) {
-            resultsGrid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    <h3>No Matches Found</h3>
-                    <p>Try resetting filters or adjusting search parameters to explore other areas.</p>
-                    <button class="btn-primary" onclick="UI.resetFilters()">Reset All Filters</button>
-                </div>
-            `;
-            if (mapContainer) mapContainer.innerHTML = '';
-            return;
+            if (filtered.length === 0) {
+                resultsGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <h3>No Matches Found</h3>
+                        <p>Try resetting filters or adjusting search parameters to explore other areas.</p>
+                        <button class="btn-primary" onclick="UI.resetFilters()">Reset All Filters</button>
+                    </div>
+                `;
+                if (mapContainer) mapContainer.innerHTML = '';
+            } else {
+                resultsGrid.innerHTML = filtered.map(p => this.createCardHTML(p)).join('');
+                this.bindCardEvents(resultsGrid);
+                if (mapContainer) {
+                    this.renderMapPins(filtered, mapContainer);
+                }
+            }
         }
 
-        resultsGrid.innerHTML = filtered.map(p => this.createCardHTML(p)).join('');
-        this.bindCardEvents(resultsGrid);
-        
-        // Render Pins on Map
-        if (mapContainer) {
-            this.renderMapPins(filtered, mapContainer);
+        // 2. Dashboard Listings Grid (My Listings / Inventory)
+        const listingsGrid = document.getElementById('dashboard-listings-grid');
+        if (listingsGrid) {
+            const userProperties = state.getCurrentUserProperties();
+            if (userProperties.length === 0) {
+                listingsGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; text-align:center; padding:40px;">
+                        <h3>You haven't listed any properties yet</h3>
+                        <p>Post a free listing to reach thousands of potential buyers/renters instantly.</p>
+                        <a href="#list-property" class="btn-primary" style="margin-top:16px; display:inline-block;">Post Property Now</a>
+                    </div>
+                `;
+            } else {
+                listingsGrid.innerHTML = userProperties.map(p => this.createCardHTML(p)).join('');
+                this.bindCardEvents(listingsGrid);
+            }
         }
     },
 
@@ -1432,25 +1522,42 @@ const UI = {
 
     // Render Favorites View
     renderFavorites() {
-        const favsGrid = document.getElementById('favorites-results-grid');
-        if (!favsGrid) return;
-        
         const favProperties = state.properties.filter(p => state.favorites.includes(p.id));
-        
-        if (favProperties.length === 0) {
-            favsGrid.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                    <h3>Your favorites list is empty</h3>
-                    <p>Bookmark premium properties while browsing to access them later instantly.</p>
-                    <a href="#search" class="btn-primary">Browse Properties</a>
-                </div>
-            `;
-            return;
+
+        // 1. Standalone Favorites Page
+        const favsGrid = document.getElementById('favorites-results-grid');
+        if (favsGrid) {
+            if (favProperties.length === 0) {
+                favsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <h3>Your favorites list is empty</h3>
+                        <p>Bookmark premium properties while browsing to access them later instantly.</p>
+                        <a href="#search" class="btn-primary">Browse Properties</a>
+                    </div>
+                `;
+            } else {
+                favsGrid.innerHTML = favProperties.map(p => this.createCardHTML(p)).join('');
+                this.bindCardEvents(favsGrid);
+            }
         }
 
-        favsGrid.innerHTML = favProperties.map(p => this.createCardHTML(p)).join('');
-        this.bindCardEvents(favsGrid);
+        // 2. Dashboard Favorites Folder
+        const savedGrid = document.getElementById('dashboard-saved-grid');
+        if (savedGrid) {
+            if (favProperties.length === 0) {
+                savedGrid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; text-align:center; padding:40px;">
+                        <h3>Your bookmarks folder is empty</h3>
+                        <p>Save premium properties while browsing to access them here.</p>
+                        <a href="#search" class="btn-primary" style="margin-top:16px; display:inline-block;">Browse Properties</a>
+                    </div>
+                `;
+            } else {
+                savedGrid.innerHTML = favProperties.map(p => this.createCardHTML(p)).join('');
+                this.bindCardEvents(savedGrid);
+            }
+        }
     },
 
     // Render Property Detailed View Page
@@ -1823,21 +1930,114 @@ const UI = {
         }
     },
 
-    // Renders the entire Dashboard
-    renderDashboard(activeTab = 'overview') {
+    // Renders the entire Dashboard (delegates with 400ms skeleton loading simulation)
+    renderDashboardPage(activeTab = 'overview') {
         if (!state.session.isLoggedIn) {
             window.location.hash = '#login';
             return;
         }
 
+        const skeleton = document.getElementById('dashboard-skeleton-loader');
+        const panels = document.getElementById('dashboard-panels-container');
+        
+        if (skeleton && panels && !this._loadingDashboard) {
+            this._loadingDashboard = true;
+            skeleton.style.display = 'flex';
+            panels.style.display = 'none';
+            
+            setTimeout(() => {
+                if (skeleton) skeleton.style.display = 'none';
+                if (panels) panels.style.display = 'block';
+                this._loadingDashboard = false;
+                this.renderDashboardInternal(activeTab);
+            }, 400);
+            return;
+        }
+
+        this.renderDashboardInternal(activeTab);
+    },
+
+    // Renders Overview Panel (KPI Cards, SVG Chart, Activity Log, and Latest Inquiries tables)
+    renderDashboard() {
         const user = state.session.currentUser;
+        if (!user) return;
+        this.renderKPICards(user);
+        this.renderOverviewChart(user);
+        this.renderActivityFeed(user);
+        this.renderOverviewTables(user);
+    },
+
+    renderDashboardInternal(activeTab) {
+        const user = state.session.currentUser;
+        if (!user) return;
         const isBuyer = user.role === 'Buyer';
 
-        // 1. Sidebar role filter
+        // 1. Sidebar role layout adaptation
         const listingsBtn = document.getElementById('sidebar-link-listings');
+        const savedBtn = document.getElementById('sidebar-link-saved');
+        const alertsBtn = document.getElementById('sidebar-link-alerts');
         const leadsBtn = document.getElementById('sidebar-link-leads');
-        if (listingsBtn) listingsBtn.style.display = isBuyer ? 'none' : 'flex';
-        if (leadsBtn) leadsBtn.style.display = isBuyer ? 'none' : 'flex';
+        const visitsBtn = document.getElementById('sidebar-link-visits');
+        const followupsBtn = document.getElementById('sidebar-link-followups');
+        const analyticsBtn = document.getElementById('sidebar-link-analytics');
+        const messagesBtn = document.getElementById('sidebar-link-messages');
+
+        const savedText = document.getElementById('sidebar-text-saved');
+        const listingsText = document.getElementById('sidebar-text-listings');
+        const leadsText = document.getElementById('sidebar-text-leads');
+        const visitsText = document.getElementById('sidebar-text-visits');
+        const analyticsText = document.getElementById('sidebar-text-analytics');
+        const messagesText = document.getElementById('sidebar-text-messages');
+
+        if (user.role === 'Buyer') {
+            if (listingsBtn) listingsBtn.style.display = 'none';
+            if (alertsBtn) alertsBtn.style.display = 'flex';
+            if (leadsBtn) leadsBtn.style.display = 'none';
+            if (followupsBtn) followupsBtn.style.display = 'none';
+            if (analyticsBtn) analyticsBtn.style.display = 'none';
+            
+            if (savedText) savedText.textContent = "Favorites";
+            if (visitsText) visitsText.textContent = "Visit Requests";
+            if (messagesText) messagesText.textContent = "Chat Inbox";
+        } else if (user.role === 'Owner') {
+            if (listingsBtn) {
+                listingsBtn.style.display = 'flex';
+                if (listingsText) listingsText.textContent = "My Listings";
+            }
+            if (alertsBtn) alertsBtn.style.display = 'none';
+            if (leadsBtn) {
+                leadsBtn.style.display = 'flex';
+                if (leadsText) leadsText.textContent = "Leads";
+            }
+            if (followupsBtn) followupsBtn.style.display = 'none';
+            if (analyticsBtn) {
+                analyticsBtn.style.display = 'flex';
+                if (analyticsText) analyticsText.textContent = "Property Performance";
+            }
+            
+            if (savedText) savedText.textContent = "Saved Properties";
+            if (visitsText) visitsText.textContent = "Site Visits";
+            if (messagesText) messagesText.textContent = "Messages";
+        } else if (user.role === 'Agent') {
+            if (listingsBtn) {
+                listingsBtn.style.display = 'flex';
+                if (listingsText) listingsText.textContent = "Inventory";
+            }
+            if (alertsBtn) alertsBtn.style.display = 'none';
+            if (leadsBtn) {
+                leadsBtn.style.display = 'flex';
+                if (leadsText) leadsText.textContent = "Lead Pipeline";
+            }
+            if (followupsBtn) followupsBtn.style.display = 'flex';
+            if (analyticsBtn) {
+                analyticsBtn.style.display = 'flex';
+                if (analyticsText) analyticsText.textContent = "Analytics";
+            }
+            
+            if (savedText) savedText.textContent = "Saved Properties";
+            if (visitsText) visitsText.textContent = "Site Visits";
+            if (messagesText) messagesText.textContent = "Messages";
+        }
 
         // 2. Set sidebar active state
         document.querySelectorAll('.sidebar-link').forEach(btn => {
@@ -1865,6 +2065,18 @@ const UI = {
             if (activeTab === 'overview') {
                 tabTitle.textContent = "Overview Dashboard";
                 tabSubtitle.textContent = `Welcome back to your LotLite management console, ${user.name}.`;
+            } else if (activeTab === 'saved') {
+                tabTitle.textContent = user.role === 'Buyer' ? "Favorites Folder" : "Saved Properties";
+                tabSubtitle.textContent = "Quick access list of bookmarked listings";
+            } else if (activeTab === 'listings') {
+                tabTitle.textContent = user.role === 'Agent' ? "Active Inventory" : "My Listed Properties";
+                tabSubtitle.textContent = "Review and edit your active property offerings";
+            } else if (activeTab === 'leads') {
+                tabTitle.textContent = user.role === 'Agent' ? "Lead Pipeline Control" : "Property Inquiries";
+                tabSubtitle.textContent = "View details of prospects seeking contacts";
+            } else if (activeTab === 'analytics') {
+                tabTitle.textContent = user.role === 'Owner' ? "Property Performance" : "SaaS Performance Analytics";
+                tabSubtitle.textContent = "Quantitative visual charts detailing search & lead analytics";
             }
         }
 
@@ -1873,223 +2085,1175 @@ const UI = {
         const sideRole = document.getElementById('sidebar-user-role');
         const sideAvatar = document.getElementById('sidebar-user-avatar');
         const headName = document.getElementById('header-user-display-name');
+        const headRoleLabel = document.getElementById('header-user-role-label');
         const headAvatar = document.getElementById('header-user-avatar');
 
         if (sideName) sideName.textContent = user.name;
         if (sideRole) sideRole.textContent = user.role;
         if (sideAvatar) sideAvatar.textContent = user.avatar;
         if (headName) headName.textContent = user.name;
+        if (headRoleLabel) headRoleLabel.textContent = user.role;
         if (headAvatar) headAvatar.textContent = user.avatar;
+
+        // Sync Notifications
+        this.renderNotifications();
 
         // 6. Subpanel Data Rendering
         if (activeTab === 'overview') {
-            // Update Card stats dynamically
-            const statTotalProps = document.getElementById('stat-total-properties');
-            const statSavedProps = document.getElementById('stat-saved-properties');
-            const statTotalLeads = document.getElementById('stat-total-leads');
-            const statSiteVisits = document.getElementById('stat-site-visits');
-
-            // Total Properties
-            let userPropsCount = 0;
-            if (isBuyer) {
-                userPropsCount = state.properties.length;
-            } else {
-                userPropsCount = state.getCurrentUserProperties().length;
-            }
-            if (statTotalProps) statTotalProps.textContent = userPropsCount;
-
-            // Saved Properties count
-            if (statSavedProps) statSavedProps.textContent = state.favorites.length;
-
-            // Leads
-            const email = user.email.toLowerCase();
-            const relevantLeads = isBuyer ? [] : state.leads.filter(l => l.agentEmail.toLowerCase() === email);
-            if (statTotalLeads) statTotalLeads.textContent = isBuyer ? 0 : relevantLeads.length;
-
-            // Site visits
-            const relevantVisits = isBuyer 
-                ? state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase())
-                : state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
-            if (statSiteVisits) statSiteVisits.textContent = relevantVisits.length;
-
-            // Render Overview Leads list
-            const leadsTbody = document.getElementById('dashboard-leads-tbody');
-            if (leadsTbody) {
-                if (isBuyer) {
-                    leadsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Lead tracking is only available for Owners and Agents.</td></tr>`;
-                } else if (relevantLeads.length === 0) {
-                    leadsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No active leads found for your properties.</td></tr>`;
-                } else {
-                    leadsTbody.innerHTML = relevantLeads.map(lead => `
-                        <tr>
-                            <td><strong>${lead.name}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">${lead.phone}</span></td>
-                            <td>${lead.propertyName}</td>
-                            <td><span class="status-pill status-${lead.status.toLowerCase()}">${lead.status}</span></td>
-                            <td>${lead.date}</td>
-                        </tr>
-                    `).join('');
-                }
-            }
-
-            // Render Overview Visits list
-            const visitsTbody = document.getElementById('dashboard-visits-tbody');
-            if (visitsTbody) {
-                if (relevantVisits.length === 0) {
-                    visitsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No scheduled site visits found.</td></tr>`;
-                } else {
-                    visitsTbody.innerHTML = relevantVisits.map(visit => `
-                        <tr>
-                            <td><strong>${visit.name}</strong></td>
-                            <td>${visit.propertyAddress}</td>
-                            <td>${visit.time}</td>
-                            <td><span class="status-pill status-${visit.status.toLowerCase()}">${visit.status}</span></td>
-                        </tr>
-                    `).join('');
-                }
-            }
+            this.renderDashboard();
         } 
         
         else if (activeTab === 'profile') {
-            const pName = document.getElementById('profile-name');
-            const pEmail = document.getElementById('profile-email');
-            const pPhone = document.getElementById('profile-phone');
-            const pRole = document.getElementById('profile-role');
-
-            if (pName) pName.value = user.name;
-            if (pEmail) pEmail.value = user.email;
-            if (pPhone) pPhone.value = user.phone;
-            if (pRole) pRole.value = user.role;
+            this.renderProfile();
         } 
         
         else if (activeTab === 'saved') {
-            const savedGrid = document.getElementById('dashboard-saved-grid');
-            if (savedGrid) {
-                const favProperties = state.properties.filter(p => state.favorites.includes(p.id));
-                if (favProperties.length === 0) {
-                    savedGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <h3>Your bookmarks folder is empty</h3>
-                            <p>Save premium properties while browsing to access them here.</p>
-                            <a href="#search" class="btn-primary" style="margin-top:16px;">Browse Properties</a>
-                        </div>
-                    `;
-                } else {
-                    savedGrid.innerHTML = favProperties.map(p => this.createCardHTML(p)).join('');
-                    this.bindCardEvents(savedGrid);
-                }
-            }
+            this.renderFavorites();
         } 
         
         else if (activeTab === 'listings') {
-            const listingsGrid = document.getElementById('dashboard-listings-grid');
-            if (listingsGrid) {
-                const userProperties = state.getCurrentUserProperties();
-                if (userProperties.length === 0) {
-                    listingsGrid.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1 / -1;">
-                            <h3>You haven't listed any properties yet</h3>
-                            <p>Post a free listing to reach thousands of potential buyers/renters instantly.</p>
-                            <a href="#list-property" class="btn-primary" style="margin-top:16px;">Post Property Now</a>
-                        </div>
-                    `;
-                } else {
-                    listingsGrid.innerHTML = userProperties.map(p => this.createCardHTML(p)).join('');
-                    this.bindCardEvents(listingsGrid);
-                }
-            }
+            this.renderListings();
         } 
         
         else if (activeTab === 'leads') {
-            const leadsTbody = document.getElementById('panel-leads-tbody');
-            if (leadsTbody) {
-                const email = user.email.toLowerCase();
-                const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
-                if (relevantLeads.length === 0) {
-                    leadsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No inquiries received yet.</td></tr>`;
-                } else {
-                    leadsTbody.innerHTML = relevantLeads.map(lead => `
-                        <tr>
-                            <td><strong>${lead.name}</strong></td>
-                            <td>${lead.email}</td>
-                            <td>${lead.phone}</td>
-                            <td>${lead.propertyName}</td>
-                            <td><span class="status-pill status-${lead.status.toLowerCase()}">${lead.status}</span></td>
-                            <td>
-                                <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.startDirectChat('${lead.email}', '${lead.name}')">Chat</button>
-                                <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.changeLeadStatus('${lead.id}')">Toggle Status</button>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            }
+            this.renderLeads();
         } 
         
         else if (activeTab === 'messages') {
-            this.renderInbox();
+            this.renderMessages();
+        }
+
+        else if (activeTab === 'alerts') {
+            this.renderAlerts();
+        }
+
+        else if (activeTab === 'visits') {
+            this.renderVisits();
+        }
+
+        else if (activeTab === 'followups') {
+            this.renderFollowUps();
+        }
+
+        else if (activeTab === 'analytics') {
+            this.renderAnalytics();
+        }
+
+        else if (activeTab === 'settings') {
+            this.renderSettings();
+        }
+
+        // Run search filter setup
+        this.setupDashboardSearch();
+    },
+
+    renderProfile() {
+        const user = state.session.currentUser;
+        if (!user) return;
+        const pName = document.getElementById('profile-name');
+        const pEmail = document.getElementById('profile-email');
+        const pPhone = document.getElementById('profile-phone');
+        const pRole = document.getElementById('profile-role');
+
+        if (pName) pName.value = user.name;
+        if (pEmail) pEmail.value = user.email;
+        if (pPhone) pPhone.value = user.phone;
+        if (pRole) pRole.value = user.role;
+    },
+
+    renderLeads() {
+        const user = state.session.currentUser;
+        if (!user) return;
+        const leadsTbody = document.getElementById('panel-leads-tbody');
+        if (leadsTbody) {
+            const email = user.email.toLowerCase();
+            const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
+            if (relevantLeads.length === 0) {
+                leadsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No inquiries received yet.</td></tr>`;
+            } else {
+                leadsTbody.innerHTML = relevantLeads.map(lead => `
+                    <tr>
+                        <td><strong>${lead.name}</strong></td>
+                        <td>${lead.email}</td>
+                        <td>${lead.phone}</td>
+                        <td>${lead.propertyName}</td>
+                        <td><span class="status-pill status-${lead.status.toLowerCase()}">${lead.status}</span></td>
+                        <td>
+                            <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.startDirectChat('${lead.email}', '${lead.name}')">Chat</button>
+                            <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.changeLeadStatus('${lead.id}')">Toggle Status</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
         }
     },
 
-    // Renders Message Inbox
-    renderInbox() {
-        const inboxList = document.getElementById('inbox-chats-list');
-        const chatContainer = document.getElementById('chat-messages-container');
-        if (!inboxList || !chatContainer) return;
+    renderAlerts() {
+        this.renderAlertsPanel();
+    },
 
-        const chatUsers = [
-            { email: "buyer@lotlite.com", name: "Vikram Malhotra (Buyer)", avatar: "VM", subtitle: "Scheduled visit for Monday" },
-            { email: "rajiv@shah.com", name: "Rajiv Shah (Lead)", avatar: "RS", subtitle: "Down payment question" },
-            { email: "preeti@patel.com", name: "Preeti Patel (Visitor)", avatar: "PP", subtitle: "Negotiable prices" }
-        ];
+    renderVisits() {
+        const user = state.session.currentUser;
+        if (!user) return;
+        
+        const upcomingTbody = document.getElementById('panel-upcoming-visits-tbody');
+        const completedTbody = document.getElementById('panel-completed-visits-tbody');
+        
+        if (!upcomingTbody && !completedTbody) return;
 
-        // Set active chat user if not set
-        if (!state.activeChatUserId) {
-            state.activeChatUserId = chatUsers[0].email;
+        const isBuyer = user.role === 'Buyer';
+        const email = user.email.toLowerCase();
+
+        const allVisits = isBuyer 
+            ? state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase())
+            : state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+
+        // Upcoming visits: Pending or Confirmed status
+        const upcomingVisits = allVisits.filter(v => 
+            v.status.toLowerCase() === 'pending' || v.status.toLowerCase() === 'confirmed'
+        );
+
+        // Completed / Past visits: Completed, Closed, Cancelled, Declined status
+        const completedVisits = allVisits.filter(v => 
+            v.status.toLowerCase() === 'completed' || v.status.toLowerCase() === 'closed' || v.status.toLowerCase() === 'cancelled' || v.status.toLowerCase() === 'declined'
+        );
+
+        // Render upcoming
+        if (upcomingTbody) {
+            if (upcomingVisits.length === 0) {
+                upcomingTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No upcoming site visits scheduled.</td></tr>`;
+            } else {
+                upcomingTbody.innerHTML = upcomingVisits.map(v => {
+                    let actionButtons = '';
+                    if (!isBuyer) {
+                        actionButtons = `
+                            <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.approveVisit('${v.id}')">Approve</button>
+                            <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.cancelVisit('${v.id}')">Decline</button>
+                        `;
+                    } else {
+                        actionButtons = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--danger); color:var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel Request</button>`;
+                    }
+
+                    return `
+                        <tr>
+                            <td><strong>${v.name}</strong></td>
+                            <td>${v.propertyAddress}</td>
+                            <td>${v.time}</td>
+                            <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                            <td>${actionButtons}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
         }
 
-        inboxList.innerHTML = chatUsers.map(u => {
-            const isActive = u.email === state.activeChatUserId ? 'active' : '';
-            return `
-                <div class="inbox-chat-item ${isActive}" onclick="UI.selectActiveChat('${u.email}', '${u.name}')">
-                    <div class="inbox-avatar">${u.avatar}</div>
-                    <div class="inbox-info">
-                        <h4>${u.name}</h4>
-                        <p>${u.subtitle}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        // Render completed
+        if (completedTbody) {
+            if (completedVisits.length === 0) {
+                completedTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No historical site visits found.</td></tr>`;
+            } else {
+                completedTbody.innerHTML = completedVisits.map(v => `
+                    <tr>
+                        <td><strong>${v.name}</strong></td>
+                        <td>${v.propertyAddress}</td>
+                        <td>${v.time}</td>
+                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                        <td><span style="font-size:0.85rem; color:var(--text-muted);">Archived</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+    },
 
-        // Render Chat bubbles for active user
-        const activeUser = chatUsers.find(u => u.email === state.activeChatUserId);
-        if (activeUser) {
-            document.getElementById('chat-header-name').textContent = activeUser.name;
-            document.getElementById('chat-header-avatar').textContent = activeUser.avatar;
-            
-            const history = state.chats[state.activeChatUserId] || [];
-            chatContainer.innerHTML = history.map(msg => {
-                const isMe = msg.sender !== activeUser.avatar;
-                const bubbleClass = isMe ? 'bubble-me' : 'bubble-them';
+    renderFollowUps() {
+        this.renderFollowUpsPanel();
+    },
+
+    renderAnalytics() {
+        const user = state.session.currentUser;
+        if (user) {
+            this.renderAnalyticsPanel(user);
+        }
+    },
+
+    getChatUserInfo(email) {
+        const mapping = {
+            "buyer@lotlite.com": { name: "Vikram Malhotra", initials: "VM" },
+            "rajiv@shah.com": { name: "Rajiv Shah", initials: "RS" },
+            "preeti@patel.com": { name: "Preeti Patel", initials: "PP" },
+            "neha@lotlite.com": { name: "Neha Sharma (Agent)", initials: "NS" },
+            "rajesh@lotlite.com": { name: "Rajesh Verma (Agent)", initials: "RV" },
+            "agent@lotlite.com": { name: "Support Agent", initials: "SA" }
+        };
+        if (mapping[email]) return mapping[email];
+        
+        // Fallback: extract from email
+        const parts = email.split('@')[0].split('.');
+        const name = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        const initials = parts.map(p => p.charAt(0).toUpperCase()).join('');
+        return { name, initials };
+    },
+
+    renderMessages() {
+        const chatsListContainer = document.getElementById('inbox-chats-list');
+        const chatMessagesContainer = document.getElementById('chat-messages-container');
+        const chatHeaderName = document.getElementById('chat-header-name');
+        const chatHeaderAvatar = document.getElementById('chat-header-avatar');
+        const chatHeaderStatus = document.getElementById('chat-header-status');
+        const searchInput = document.getElementById('chats-search-input');
+        
+        if (!chatsListContainer) return;
+
+        // If no active chat selected, select the first one
+        const chatUserIds = Object.keys(state.chats);
+        if (chatUserIds.length > 0 && !state.activeChatUserId) {
+            state.activeChatUserId = chatUserIds[0];
+        }
+
+        const activeUserId = state.activeChatUserId;
+        const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        // 1. Render left pane: list of chats
+        if (chatUserIds.length === 0) {
+            chatsListContainer.innerHTML = `<div style="padding: 20px; text-align:center; color: var(--text-muted);">No active chats.</div>`;
+        } else {
+            const filteredUserIds = chatUserIds.filter(email => {
+                const info = this.getChatUserInfo(email);
+                return info.name.toLowerCase().includes(searchQuery) || email.toLowerCase().includes(searchQuery);
+            });
+
+            chatsListContainer.innerHTML = filteredUserIds.map(email => {
+                const info = this.getChatUserInfo(email);
+                const msgs = state.chats[email] || [];
+                const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].message : 'No messages';
+                const isActive = email === activeUserId;
+
                 return `
-                    <div class="chat-bubble ${bubbleClass}">
-                        <div class="bubble-content">${msg.message}</div>
-                        <div class="bubble-time">${msg.time}</div>
+                    <div class="inbox-chat-item ${isActive ? 'active' : ''}" onclick="UI.selectActiveChat('${email}')">
+                        <div class="inbox-avatar">${info.initials}</div>
+                        <div class="inbox-info">
+                            <h4>${info.name}</h4>
+                            <p>${lastMsg}</p>
+                        </div>
                     </div>
                 `;
             }).join('');
-            
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 2. Render right pane: active chat details
+        if (activeUserId) {
+            const info = this.getChatUserInfo(activeUserId);
+            if (chatHeaderName) chatHeaderName.textContent = info.name;
+            if (chatHeaderAvatar) chatHeaderAvatar.textContent = info.initials;
+            if (chatHeaderStatus) chatHeaderStatus.textContent = "Online";
+
+            const msgs = state.chats[activeUserId] || [];
+            if (chatMessagesContainer) {
+                if (msgs.length === 0) {
+                    chatMessagesContainer.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">No messages yet. Send a message to start conversation.</div>`;
+                } else {
+                    chatMessagesContainer.innerHTML = msgs.map(m => {
+                        const isMe = m.sender === 'Me' || m.sender === state.session.currentUser.avatar;
+                        const bubbleClass = isMe ? 'bubble-me' : 'bubble-them';
+                        return `
+                            <div class="chat-bubble ${bubbleClass}">
+                                <div>${m.message}</div>
+                                <div class="bubble-time">${m.time}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    // Auto scroll to bottom
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }
+            }
+        } else {
+            // No active chat selected
+            if (chatHeaderName) chatHeaderName.textContent = "Select a Chat";
+            if (chatHeaderAvatar) chatHeaderAvatar.textContent = "-";
+            if (chatHeaderStatus) chatHeaderStatus.textContent = "";
+            if (chatMessagesContainer) {
+                chatMessagesContainer.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">Please select a conversation from the sidebar to start chatting.</div>`;
+            }
+        }
+
+        // Bind search input events if not already done
+        if (searchInput && !searchInput._hasInputListener) {
+            searchInput._hasInputListener = true;
+            searchInput.addEventListener('input', () => {
+                this.renderMessages();
+            });
         }
     },
 
-    selectActiveChat(email, name) {
+    selectActiveChat(email) {
         state.activeChatUserId = email;
-        this.renderInbox();
+        this.renderMessages();
+    },
+
+    renderSettings() {
+        const notifEmail = document.getElementById('settings-notif-email');
+        const notifSms = document.getElementById('settings-notif-sms');
+        const notifReports = document.getElementById('settings-notif-reports');
+        const currencySelect = document.getElementById('settings-currency');
+        
+        // Load settings from localStorage
+        const email = state.session.currentUser.email;
+        const savedSettings = localStorage.getItem(`lotlite_settings_${email}`);
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (notifEmail) notifEmail.checked = settings.email ?? true;
+            if (notifSms) notifSms.checked = settings.sms ?? true;
+            if (notifReports) notifReports.checked = settings.reports ?? true;
+            if (currencySelect) currencySelect.value = settings.currency ?? 'INR';
+        }
+        
+        // Bind form submit if not already done
+        const settingsForm = document.getElementById('settings-form');
+        if (settingsForm && !settingsForm._hasSubmitListener) {
+            settingsForm._hasSubmitListener = true;
+            settingsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const settings = {
+                    email: notifEmail ? notifEmail.checked : true,
+                    sms: notifSms ? notifSms.checked : true,
+                    reports: notifReports ? notifReports.checked : true,
+                    currency: currencySelect ? currencySelect.value : 'INR'
+                };
+                localStorage.setItem(`lotlite_settings_${email}`, JSON.stringify(settings));
+                state.showNotification("Settings Saved", "Preferences updated successfully.");
+            });
+        }
+    },
+
+    // KPI Cards rendering logic
+    renderKPICards(user) {
+        const cardsGrid = document.getElementById('dashboard-kpi-cards');
+        if (!cardsGrid) return;
+        
+        let cardsHTML = '';
+        
+        if (user.role === 'Buyer') {
+            const savedCount = state.favorites.length;
+            const searchCount = state.recentSearches.length;
+            const visitCount = state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase()).length;
+            const contactCount = Object.keys(state.chats).length;
+            
+            cardsHTML = `
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=saved'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--danger); background:rgba(239, 68, 68, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${savedCount}</h4>
+                        <p class="card-label">Saved Properties</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#search'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--primary); background:rgba(79, 70, 229, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${searchCount}</h4>
+                        <p class="card-label">Recent Searches</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=visits'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--warning); background:rgba(245, 158, 11, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${visitCount}</h4>
+                        <p class="card-label">Site Visits</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=messages'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--accent); background:rgba(13, 148, 136, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${contactCount}</h4>
+                        <p class="card-label">Contact Requests</p>
+                    </div>
+                </div>
+            `;
+        } else if (user.role === 'Owner') {
+            const activeListings = state.getCurrentUserProperties().length;
+            const totalViews = activeListings * 154; 
+            const email = user.email.toLowerCase();
+            const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
+            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            
+            cardsHTML = `
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=listings'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--primary); background:rgba(79, 70, 229, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${activeListings}</h4>
+                        <p class="card-label">Active Listings</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=analytics'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--accent); background:rgba(13, 148, 136, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${totalViews}</h4>
+                        <p class="card-label">Total Views</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=leads'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--danger); background:rgba(239, 68, 68, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${relevantLeads.length}</h4>
+                        <p class="card-label">Leads Received</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=visits'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--warning); background:rgba(245, 158, 11, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${relevantVisits.length}</h4>
+                        <p class="card-label">Site Visits</p>
+                    </div>
+                </div>
+            `;
+        } else if (user.role === 'Agent') {
+            const activeProps = state.getCurrentUserProperties().length;
+            const email = user.email.toLowerCase();
+            const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
+            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            
+            const closedLeads = relevantLeads.filter(l => l.status === 'Closed' || l.status === 'Interested').length;
+            const conversionRate = relevantLeads.length > 0 ? ((closedLeads / relevantLeads.length) * 100).toFixed(1) + '%' : '18.5%';
+
+            cardsHTML = `
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=listings'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--primary); background:rgba(79, 70, 229, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${activeProps}</h4>
+                        <p class="card-label">Active Properties</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=leads'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--accent); background:rgba(13, 148, 136, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${relevantLeads.length}</h4>
+                        <p class="card-label">New Leads</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=visits'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--warning); background:rgba(245, 158, 11, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${relevantVisits.length}</h4>
+                        <p class="card-label">Site Visits</p>
+                    </div>
+                </div>
+                <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=analytics'" style="cursor:pointer;">
+                    <div class="card-icon-box" style="color:var(--danger); background:rgba(239, 68, 68, 0.1);">
+                        <svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
+                    </div>
+                    <div class="card-info-box">
+                        <h4 class="card-stat">${conversionRate}</h4>
+                        <p class="card-label">Conversion Rate</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        cardsGrid.innerHTML = cardsHTML;
+    },
+
+    // SVG Line/Bar charts drawing logic
+    renderOverviewChart(user) {
+        const container = document.getElementById('overview-chart-container');
+        const legendContainer = document.getElementById('chart-legend-container');
+        if (!container) return;
+
+        let points = [];
+        let labels = [];
+        let seriesName = 'Activity';
+        let legendHTML = '';
+
+        if (user.role === 'Buyer') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            points = [20, 45, 28, 60, 55, 80]; 
+            seriesName = 'Search Actions';
+            legendHTML = `
+                <div class="legend-item">
+                    <span class="legend-color" style="background:var(--primary);"></span>
+                    <span>${seriesName}</span>
+                </div>
+            `;
+        } else if (user.role === 'Owner') {
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            points = [210, 340, 290, 480, 620, 920]; 
+            seriesName = 'Listing Views';
+            legendHTML = `
+                <div class="legend-item">
+                    <span class="legend-color" style="background:var(--primary);"></span>
+                    <span>${seriesName}</span>
+                </div>
+            `;
+        } else { // Agent
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const dataset1 = [5, 12, 8, 18, 15, 22]; 
+            const dataset2 = [3, 8, 5, 12, 10, 16]; 
+            legendHTML = `
+                <div class="legend-item">
+                    <span class="legend-color" style="background:var(--primary);"></span>
+                    <span>Leads</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background:var(--accent);"></span>
+                    <span>Visits</span>
+                </div>
+            `;
+            
+            this.drawDoubleLineChart(container, labels, dataset1, dataset2);
+            if (legendContainer) legendContainer.innerHTML = legendHTML;
+            return;
+        }
+
+        if (legendContainer) legendContainer.innerHTML = legendHTML;
+        this.drawSingleLineChart(container, labels, points, seriesName);
+    },
+
+    drawSingleLineChart(container, labels, points, seriesName) {
+        const width = container.clientWidth || 500;
+        const height = 220;
+        const padding = 35;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        const maxVal = Math.max(...points) * 1.15;
+        
+        const coords = points.map((p, index) => {
+            const x = padding + (index / (points.length - 1)) * chartWidth;
+            const y = padding + chartHeight - (p / maxVal) * chartHeight;
+            return { x, y };
+        });
+
+        let pathD = `M ${coords[0].x} ${coords[0].y}`;
+        let areaD = `M ${coords[0].x} ${coords[0].y}`;
+        
+        for (let i = 1; i < coords.length; i++) {
+            const cpX1 = coords[i-1].x + (coords[i].x - coords[i-1].x) / 2;
+            const cpY1 = coords[i-1].y;
+            const cpX2 = coords[i-1].x + (coords[i].x - coords[i-1].x) / 2;
+            const cpY2 = coords[i].y;
+            
+            pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${coords[i].x} ${coords[i].y}`;
+        }
+        
+        areaD = pathD + ` L ${coords[coords.length - 1].x} ${height - padding} L ${coords[0].x} ${height - padding} Z`;
+
+        let svg = `
+            <svg class="chart-svg" viewBox="0 0 ${width} ${height}" style="overflow:visible; width:100%; height:100%;">
+                <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="var(--primary)" stop-opacity="0.00"/>
+                    </linearGradient>
+                </defs>
+                <line x1="${padding}" y1="${padding}" x2="${width - padding}" y2="${padding}" class="chart-grid-line" />
+                <line x1="${padding}" y1="${padding + chartHeight/2}" x2="${width - padding}" y2="${padding + chartHeight/2}" class="chart-grid-line" />
+                <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="chart-grid-line" />
+                
+                <path d="${areaD}" fill="url(#chartGrad)" />
+                <path d="${pathD}" class="chart-line" />
+                
+                ${coords.map((c, i) => `
+                    <circle cx="${c.x}" cy="${c.y}" r="5" fill="var(--bg-secondary)" stroke="var(--primary)" stroke-width="3" style="transition: r 0.2s; cursor:pointer;" onmouseover="this.setAttribute('r', '7')" onmouseout="this.setAttribute('r', '5')">
+                        <title>${labels[i]}: ${points[i]}</title>
+                    </circle>
+                    <text x="${c.x}" y="${height - 10}" class="chart-axis-text" text-anchor="middle">${labels[i]}</text>
+                `).join('')}
+                
+                <text x="${padding - 8}" y="${padding + 4}" class="chart-axis-text" text-anchor="end">${Math.round(maxVal)}</text>
+                <text x="${padding - 8}" y="${padding + chartHeight/2 + 4}" class="chart-axis-text" text-anchor="end">${Math.round(maxVal/2)}</text>
+                <text x="${padding - 8}" y="${height - padding + 4}" class="chart-axis-text" text-anchor="end">0</text>
+            </svg>
+        `;
+        
+        container.innerHTML = svg;
+    },
+
+    drawDoubleLineChart(container, labels, dataset1, dataset2) {
+        const width = container.clientWidth || 500;
+        const height = 220;
+        const padding = 35;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        const maxVal = Math.max(...dataset1, ...dataset2) * 1.15;
+        
+        const getPath = (data) => {
+            const coords = data.map((p, index) => {
+                const x = padding + (index / (data.length - 1)) * chartWidth;
+                const y = padding + chartHeight - (p / maxVal) * chartHeight;
+                return { x, y };
+            });
+            let pathD = `M ${coords[0].x} ${coords[0].y}`;
+            for (let i = 1; i < coords.length; i++) {
+                const cpX1 = coords[i-1].x + (coords[i].x - coords[i-1].x) / 2;
+                const cpY1 = coords[i-1].y;
+                const cpX2 = coords[i-1].x + (coords[i].x - coords[i-1].x) / 2;
+                const cpY2 = coords[i].y;
+                pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${coords[i].x} ${coords[i].y}`;
+            }
+            return { pathD, coords };
+        };
+
+        const line1 = getPath(dataset1);
+        const line2 = getPath(dataset2);
+
+        let svg = `
+            <svg class="chart-svg" viewBox="0 0 ${width} ${height}" style="overflow:visible; width:100%; height:100%;">
+                <line x1="${padding}" y1="${padding}" x2="${width - padding}" y2="${padding}" class="chart-grid-line" />
+                <line x1="${padding}" y1="${padding + chartHeight/2}" x2="${width - padding}" y2="${padding + chartHeight/2}" class="chart-grid-line" />
+                <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="chart-grid-line" />
+                
+                <path d="${line1.pathD}" class="chart-line" />
+                <path d="${line2.pathD}" class="chart-line" style="stroke:var(--accent); filter: drop-shadow(0px 6px 8px rgba(13, 148, 136, 0.3));" />
+                
+                ${line1.coords.map((c, i) => `
+                    <circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--bg-secondary)" stroke="var(--primary)" stroke-width="2" style="cursor:pointer;">
+                        <title>${labels[i]} (Leads): ${dataset1[i]}</title>
+                    </circle>
+                `).join('')}
+
+                ${line2.coords.map((c, i) => `
+                    <circle cx="${c.x}" cy="${c.y}" r="4" fill="var(--bg-secondary)" stroke="var(--accent)" stroke-width="2" style="cursor:pointer;">
+                        <title>${labels[i]} (Visits): ${dataset2[i]}</title>
+                    </circle>
+                    <text x="${c.x}" y="${height - 10}" class="chart-axis-text" text-anchor="middle">${labels[i]}</text>
+                `).join('')}
+                
+                <text x="${padding - 8}" y="${padding + 4}" class="chart-axis-text" text-anchor="end">${Math.round(maxVal)}</text>
+                <text x="${padding - 8}" y="${padding + chartHeight/2 + 4}" class="chart-axis-text" text-anchor="end">${Math.round(maxVal/2)}</text>
+                <text x="${padding - 8}" y="${height - padding + 4}" class="chart-axis-text" text-anchor="end">0</text>
+            </svg>
+        `;
+        
+        container.innerHTML = svg;
+    },
+
+    // Activity Feed rendering
+    renderActivityFeed(user) {
+        const feedContainer = document.getElementById('overview-activity-feed');
+        if (!feedContainer) return;
+
+        let feedItems = [];
+
+        if (user.role === 'Buyer') {
+            feedItems = [
+                { type: 'alert', text: 'New property matching Hinjawadi Alert: <strong>Ganga Acropolis</strong>', time: '12m ago', color: 'var(--primary)', bg: 'var(--primary-light)' },
+                { type: 'visit', text: 'Visit requested for <strong>Kolte-Patil Life Republic</strong> confirmed', time: '2h ago', color: 'var(--success)', bg: 'rgba(16, 185, 129, 0.1)' },
+                { type: 'message', text: 'New message from agent <strong>Rahul Deshmukh</strong>', time: '4h ago', color: 'var(--accent)', bg: 'var(--accent-light)' },
+                { type: 'search', text: 'You performed a search for <strong>villas in Koregaon Park</strong>', time: 'Yesterday', color: 'var(--warning)', bg: 'rgba(245, 158, 11, 0.1)' }
+            ];
+        } else if (user.role === 'Owner') {
+            feedItems = [
+                { type: 'lead', text: 'Lead <strong>Anjali Gupta</strong> submitted contact request for VTP Condo', time: '10m ago', color: 'var(--danger)', bg: 'rgba(239, 68, 68, 0.1)' },
+                { type: 'visit', text: 'Visitor scheduled inspection at <strong>Skyline Oasis Apartments</strong>', time: '1h ago', color: 'var(--success)', bg: 'rgba(16, 185, 129, 0.1)' },
+                { type: 'view', text: 'Your property <strong>Skyline Oasis</strong> surpassed 500 views', time: '5h ago', color: 'var(--accent)', bg: 'var(--accent-light)' },
+                { type: 'listing', text: 'Your new listing <strong>Sohna Road Luxury Villa</strong> is now published', time: '3 days ago', color: 'var(--primary)', bg: 'var(--primary-light)' }
+            ];
+        } else { 
+            feedItems = [
+                { type: 'lead', text: 'New Lead <strong>Devendra Joshi</strong> assigned to Hinjawadi territory', time: '5m ago', color: 'var(--primary)', bg: 'var(--primary-light)' },
+                { type: 'visit', text: 'Site visit with <strong>Vikram Malhotra</strong> marked completed', time: '1h ago', color: 'var(--success)', bg: 'rgba(16, 185, 129, 0.1)' },
+                { type: 'message', text: 'Inquiry response sent to <strong>Rajiv Shah</strong>', time: '3h ago', color: 'var(--accent)', bg: 'var(--accent-light)' },
+                { type: 'alert', text: 'Price drop notification sent to 12 watchlisted buyers', time: 'Yesterday', color: 'var(--warning)', bg: 'rgba(245, 158, 11, 0.1)' }
+            ];
+        }
+
+        const icons = {
+            alert: '🔔',
+            visit: '📅',
+            message: '💬',
+            search: '🔍',
+            lead: '👥',
+            view: '👁️',
+            listing: '🏠'
+        };
+
+        feedContainer.innerHTML = feedItems.map(item => `
+            <div class="activity-item">
+                <div class="activity-icon" style="color:${item.color}; background:${item.bg};">${icons[item.type] || '⚡'}</div>
+                <div class="activity-details">
+                    <p>${item.text}</p>
+                    <span>${item.time}</span>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    // Overview Tables rendering
+    renderOverviewTables(user) {
+        const t1Title = document.getElementById('overview-table-1-title');
+        const t1Sub = document.getElementById('overview-table-1-subtitle');
+        const t1Thead = document.getElementById('overview-table-1-thead');
+        const t1Tbody = document.getElementById('overview-table-1-tbody');
+
+        const t2Title = document.getElementById('overview-table-2-title');
+        const t2Sub = document.getElementById('overview-table-2-subtitle');
+        const t2Thead = document.getElementById('overview-table-2-thead');
+        const t2Tbody = document.getElementById('overview-table-2-tbody');
+
+        if (!t1Title || !t2Title) return;
+
+        if (user.role === 'Buyer') {
+            t1Title.textContent = "Recent Searches";
+            t1Sub.textContent = "Your latest search filters and query criteria";
+            t1Thead.innerHTML = `
+                <tr>
+                    <th>Search Query</th>
+                    <th>Property Type</th>
+                    <th>Budget Range</th>
+                    <th>Date Checked</th>
+                </tr>
+            `;
+            t1Tbody.innerHTML = state.recentSearches.map(s => `
+                <tr>
+                    <td><strong>${s.query}</strong></td>
+                    <td>${s.type}</td>
+                    <td>${s.budget}</td>
+                    <td>${s.date}</td>
+                </tr>
+            `).join('');
+
+            t2Title.textContent = "Visit Requests";
+            t2Sub.textContent = "Properties you have requested to view in person";
+            t2Thead.innerHTML = `
+                <tr>
+                    <th>Property Address</th>
+                    <th>Scheduled Time</th>
+                    <th>Status</th>
+                </tr>
+            `;
+            const myVisits = state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase());
+            if (myVisits.length === 0) {
+                t2Tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">No visits requested.</td></tr>`;
+            } else {
+                t2Tbody.innerHTML = myVisits.map(v => `
+                    <tr>
+                        <td><strong>${v.propertyAddress}</strong></td>
+                        <td>${v.time}</td>
+                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                    </tr>
+                `).join('');
+            }
+        } 
+        
+        else if (user.role === 'Owner') {
+            t1Title.textContent = "My Active Properties";
+            t1Sub.textContent = "Properties you have listed for sale/rent";
+            t1Thead.innerHTML = `
+                <tr>
+                    <th>Property Name</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                </tr>
+            `;
+            const myProps = state.getCurrentUserProperties();
+            if (myProps.length === 0) {
+                t1Tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No properties listed.</td></tr>`;
+            } else {
+                t1Tbody.innerHTML = myProps.map(p => `
+                    <tr>
+                        <td><strong>${p.title}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">${p.location}</span></td>
+                        <td>${p.type}</td>
+                        <td>₹${(p.price / 10000000).toFixed(2)} Cr</td>
+                        <td><span class="status-pill status-interested">${p.purpose.toUpperCase()}</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            t2Title.textContent = "Recent Inquiries";
+            t2Sub.textContent = "Latest interest submissions on your listings";
+            t2Thead.innerHTML = `
+                <tr>
+                    <th>Lead Name</th>
+                    <th>Property</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            `;
+            const email = user.email.toLowerCase();
+            const myLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
+            if (myLeads.length === 0) {
+                t2Tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No inquiries received.</td></tr>`;
+            } else {
+                t2Tbody.innerHTML = myLeads.map(l => `
+                    <tr>
+                        <td><strong>${l.name}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">${l.phone}</span></td>
+                        <td>${l.propertyName}</td>
+                        <td><span class="status-pill status-${l.status.toLowerCase()}">${l.status}</span></td>
+                        <td>${l.date}</td>
+                    </tr>
+                `).join('');
+            }
+        } 
+        
+        else if (user.role === 'Agent') {
+            t1Title.textContent = "Lead Pipeline Tracking";
+            t1Sub.textContent = "Prospective buyers currently in discussion";
+            t1Thead.innerHTML = `
+                <tr>
+                    <th>Lead Name</th>
+                    <th>Property Interested</th>
+                    <th>Status</th>
+                    <th>Action Date</th>
+                </tr>
+            `;
+            const email = user.email.toLowerCase();
+            const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
+            if (relevantLeads.length === 0) {
+                t1Tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No leads active.</td></tr>`;
+            } else {
+                t1Tbody.innerHTML = relevantLeads.map(l => `
+                    <tr>
+                        <td><strong>${l.name}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">${l.phone}</span></td>
+                        <td>${l.propertyName}</td>
+                        <td><span class="status-pill status-${l.status.toLowerCase()}">${l.status}</span></td>
+                        <td>${l.date}</td>
+                    </tr>
+                `).join('');
+            }
+
+            t2Title.textContent = "Scheduled Site Visits";
+            t2Sub.textContent = "Calendar schedule for property physical viewings";
+            t2Thead.innerHTML = `
+                <tr>
+                    <th>Visitor Name</th>
+                    <th>Property Address</th>
+                    <th>Schedule Time</th>
+                    <th>Status</th>
+                </tr>
+            `;
+            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            if (relevantVisits.length === 0) {
+                t2Tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No visits scheduled.</td></tr>`;
+            } else {
+                t2Tbody.innerHTML = relevantVisits.map(v => `
+                    <tr>
+                        <td><strong>${v.name}</strong></td>
+                        <td>${v.propertyAddress}</td>
+                        <td>${v.time}</td>
+                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+    },
+
+    // Alerts Panel rendering
+    renderAlertsPanel() {
+        const tbody = document.getElementById('panel-alerts-tbody');
+        if (!tbody) return;
+
+        if (state.propertyAlerts.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No alerts configured. Click "Create Alert" to start.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = state.propertyAlerts.map(a => `
+            <tr>
+                <td><strong>${a.query}</strong></td>
+                <td>${a.type}</td>
+                <td>₹${(a.minPrice/100000).toFixed(0)} L - ₹${(a.maxPrice/10000000).toFixed(2)} Cr</td>
+                <td><span style="font-weight:700; color:var(--primary);">${a.matches} matches</span></td>
+                <td><span class="status-pill status-${a.active ? 'interested' : 'closed'}">${a.active ? 'Active' : 'Muted'}</span></td>
+                <td>
+                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--primary); color:var(--primary);" onclick="UI.toggleAlertStatus('${a.id}')">Toggle</button>
+                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--danger); color:var(--danger);" onclick="UI.deleteAlert('${a.id}')">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    // Visits Panel rendering
+    renderVisitsPanel(user) {
+        const tbody = document.getElementById('panel-visits-tbody');
+        if (!tbody) return;
+
+        const isBuyer = user.role === 'Buyer';
+        const email = user.email.toLowerCase();
+
+        const list = isBuyer 
+            ? state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase())
+            : state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No scheduled visits found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = list.map(v => {
+            let actionButtons = '';
+            if (!isBuyer) {
+                actionButtons = `
+                    <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.approveVisit('${v.id}')">Approve</button>
+                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.cancelVisit('${v.id}')">Decline</button>
+                `;
+            } else {
+                actionButtons = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--danger); color:var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel Request</button>`;
+            }
+
+            return `
+                <tr>
+                    <td><strong>${v.name}</strong></td>
+                    <td>${v.propertyAddress}</td>
+                    <td>${v.time}</td>
+                    <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                    <td>${actionButtons}</td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    // Follow-ups Panel rendering
+    renderFollowUpsPanel() {
+        const tbody = document.getElementById('panel-followups-tbody');
+        if (!tbody) return;
+
+        if (state.followUps.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">All tasks completed! Good job.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = state.followUps.map(f => {
+            const priorityColors = {
+                High: 'var(--danger)',
+                Medium: 'var(--warning)',
+                Low: 'var(--accent)'
+            };
+            const priorityColor = priorityColors[f.priority] || 'var(--text-secondary)';
+
+            return `
+                <tr>
+                    <td><strong>${f.leadName}</strong></td>
+                    <td>${f.task}</td>
+                    <td>${f.dueDate}</td>
+                    <td><span style="font-weight:700; color:${priorityColor};">${f.priority}</span></td>
+                    <td><span class="status-pill status-${f.done ? 'completed' : 'pending'}">${f.done ? 'Done' : 'Pending'}</span></td>
+                    <td>
+                        <button class="btn-primary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.toggleFollowUp('${f.id}')">${f.done ? 'Reopen' : 'Mark Done'}</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    // Analytics Panel rendering
+    renderAnalyticsPanel(user) {
+        const funnelContainer = document.getElementById('analytics-conversion-funnel');
+        const chartContainer = document.getElementById('analytics-growth-chart-container');
+        if (!funnelContainer) return;
+
+        const stages = [
+            { label: 'Total Inquiries', count: 180, percentage: 100, color: 'var(--primary)' },
+            { label: 'Contacted Leads', count: 120, percentage: 66, color: 'var(--accent)' },
+            { label: 'Site Visits', count: 48, percentage: 26, color: 'var(--warning)' },
+            { label: 'Offers / Closures', count: 12, percentage: 6.6, color: 'var(--success)' }
+        ];
+
+        funnelContainer.innerHTML = stages.map(s => `
+            <div class="funnel-stage">
+                <div class="funnel-label-row">
+                    <span>${s.label}</span>
+                    <span><strong>${s.count}</strong> (${s.percentage}%)</span>
+                </div>
+                <div class="funnel-bar-bg">
+                    <div class="funnel-bar-fill" style="width: ${s.percentage}%; background: ${s.color};"></div>
+                </div>
+            </div>
+        `).join('');
+
+        if (chartContainer) {
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const points = [800, 1100, 950, 1400, 1800, 2400]; 
+            this.drawSingleLineChart(chartContainer, labels, points, 'Aggregate Views');
+        }
+    },
+
+    // Notifications populator
+    renderNotifications() {
+        const container = document.getElementById('notifications-items-container');
+        const countBadge = document.getElementById('dashboard-notif-count');
+        if (!container) return;
+
+        const unread = state.notifications.filter(n => !n.read);
+        if (countBadge) {
+            countBadge.textContent = unread.length;
+            countBadge.style.opacity = unread.length === 0 ? '0' : '1';
+        }
+
+        if (state.notifications.length === 0) {
+            container.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No notifications.</div>`;
+            return;
+        }
+
+        container.innerHTML = state.notifications.map(n => `
+            <div class="dropdown-item" style="cursor:pointer; padding: 12px 16px; border-bottom:1px solid var(--border-color); ${n.read ? '' : 'background: rgba(79, 70, 229, 0.03);'}" onclick="UI.readNotification('${n.id}', event)">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <strong>${n.title}</strong>
+                    ${n.read ? '' : '<span style="width:6px; height:6px; background:var(--danger); border-radius:50%; display:inline-block; margin-top:4px;"></span>'}
+                </div>
+                <p style="margin: 4px 0 0 0; font-size: 0.8rem; color:var(--text-secondary);">${n.text}</p>
+                <span class="time" style="font-size: 0.7rem; color:var(--text-muted); display:block; margin-top:4px;">${n.time}</span>
+            </div>
+        `).join('');
+    },
+
+    // UI actions callbacks
+    toggleAlertStatus(id) {
+        const alert = state.propertyAlerts.find(a => a.id === id);
+        if (alert) {
+            alert.active = !alert.active;
+            localStorage.setItem('lotlite_alerts_db', JSON.stringify(state.propertyAlerts));
+            this.renderAlerts();
+            state.showNotification("Alert Updated", `Search alert has been ${alert.active ? 'activated' : 'muted'}.`);
+        }
+    },
+
+    deleteAlert(id) {
+        const index = state.propertyAlerts.findIndex(a => a.id === id);
+        if (index !== -1) {
+            state.propertyAlerts.splice(index, 1);
+            localStorage.setItem('lotlite_alerts_db', JSON.stringify(state.propertyAlerts));
+            this.renderAlerts();
+            state.showNotification("Alert Deleted", "Search alert has been removed.");
+        }
+    },
+
+    toggleFollowUp(id) {
+        const task = state.followUps.find(f => f.id === id);
+        if (task) {
+            task.done = !task.done;
+            localStorage.setItem('lotlite_followups_db', JSON.stringify(state.followUps));
+            this.renderFollowUps();
+            state.showNotification("Task Updated", `Task marked ${task.done ? 'completed' : 'pending'}.`);
+        }
+    },
+
+    approveVisit(id) {
+        const visit = state.siteVisits.find(v => v.id === id);
+        if (visit) {
+            visit.status = 'Confirmed';
+            localStorage.setItem('lotlite_site_visits_db', JSON.stringify(state.siteVisits));
+            this.renderVisits();
+            state.showNotification("Visit Approved", `Site visit request with ${visit.name} is confirmed.`);
+        }
+    },
+
+    cancelVisit(id) {
+        const visit = state.siteVisits.find(v => v.id === id);
+        if (visit) {
+            visit.status = 'Closed';
+            localStorage.setItem('lotlite_site_visits_db', JSON.stringify(state.siteVisits));
+            this.renderVisits();
+            state.showNotification("Visit Cancelled", `Visit request marked cancelled.`);
+        }
+    },
+
+    readNotification(id, event) {
+        if (event) event.stopPropagation();
+        const notif = state.notifications.find(n => n.id === id);
+        if (notif) {
+            notif.read = true;
+            localStorage.setItem('lotlite_notifications_db', JSON.stringify(state.notifications));
+            this.renderNotifications();
+        }
+    },
+
+    clearNotifications() {
+        state.notifications.forEach(n => n.read = true);
+        localStorage.setItem('lotlite_notifications_db', JSON.stringify(state.notifications));
+        this.renderNotifications();
+        state.showNotification("Cleared", "All notifications marked as read.");
+    },
+
+    createAlert() {
+        const query = prompt("Enter alert search term (e.g. '3 BHK Hinjawadi'):", "2 BHK Baner");
+        if (!query) return;
+        const type = prompt("Enter property type ('Apartment', 'Villa', 'Plot'):", "Apartment");
+        if (!type) return;
+        
+        const newAlert = {
+            id: 'alert-' + Date.now(),
+            query: query,
+            type: type,
+            minPrice: 4000000,
+            maxPrice: 15000000,
+            active: true,
+            matches: Math.floor(Math.random() * 8) + 1
+        };
+
+        state.propertyAlerts.push(newAlert);
+        localStorage.setItem('lotlite_alerts_db', JSON.stringify(state.propertyAlerts));
+        this.renderAlerts();
+        state.showNotification("Alert Configured", "You will be notified of matches matching: " + query);
+    },
+
+    // Search bar filter logic
+    setupDashboardSearch() {
+        const searchInput = document.getElementById('dashboard-search-input');
+        if (!searchInput || this._searchSetupDone) return;
+        this._searchSetupDone = true;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                const isAuthPage = window.location.hash.startsWith('#login') || window.location.hash.startsWith('#signup');
+                if (!isAuthPage) {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+            }
+        });
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase().trim();
+            this.filterDashboardView(query);
+        });
+    },
+
+    filterDashboardView(query) {
+        const activePanel = document.querySelector('.dashboard-panel.active');
+        if (!activePanel) return;
+
+        const rows = activePanel.querySelectorAll('tbody tr');
+        if (rows.length > 0) {
+            rows.forEach(row => {
+                if (row.cells.length === 1 && row.cells[0].textContent.includes('No')) return;
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        const cards = activePanel.querySelectorAll('.cards-grid .property-card');
+        if (cards.length > 0) {
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
     },
 
     startDirectChat(email, name) {
         state.activeChatUserId = email;
-        // Make sure a chat key exists
         if (!state.chats[email]) {
             state.chats[email] = [
                 { sender: "System", message: `Chat started with ${name}.`, time: "Just Now" }
@@ -2107,7 +3271,7 @@ const UI = {
             lead.status = statuses[nextIdx];
             localStorage.setItem('lotlite_leads_db', JSON.stringify(state.leads));
             state.showNotification("Status Updated", `Lead ${lead.name} marked as ${lead.status}`);
-            this.renderDashboard('leads');
+            this.renderDashboardPage('leads');
         }
     }
 };
@@ -2250,7 +3414,7 @@ const Router = {
                     activeTab = params.get('tab');
                 }
             }
-            UI.renderDashboard(activeTab);
+            UI.renderDashboardPage(activeTab);
         }
     }
 };
@@ -2509,7 +3673,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('authChanged', () => {
         UI.updateHeader();
         if (window.location.hash.startsWith('#dashboard')) {
-            UI.renderDashboard();
+            UI.renderDashboardPage();
         }
     });
 
@@ -2705,6 +3869,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // M2. Clear notifications
+    const clearNotifBtn = document.getElementById('btn-clear-notifications');
+    if (clearNotifBtn) {
+        clearNotifBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            UI.clearNotifications();
+        });
+    }
+
+    // M3. Create alert
+    const createAlertBtn = document.getElementById('btn-create-alert');
+    if (createAlertBtn) {
+        createAlertBtn.addEventListener('click', () => {
+            UI.createAlert();
+        });
+    }
+
     // N. Send chat message form submission
     const chatForm = document.getElementById('chat-send-form');
     if (chatForm) {
@@ -2738,7 +3920,7 @@ document.addEventListener('DOMContentLoaded', () => {
             inputMsg.value = '';
 
             // Re-render chats
-            UI.renderInbox();
+            UI.renderMessages();
 
             // Simulate quick reply
             const activeUserEmail = state.activeChatUserId;
@@ -2762,7 +3944,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('lotlite_chats_db', JSON.stringify(state.chats));
 
                 if (state.activeChatUserId === activeUserEmail && window.location.hash.includes('tab=messages')) {
-                    UI.renderInbox();
+                    UI.renderMessages();
                 }
                 
                 state.showNotification("New Message Received", `From ${activeUserEmail}`);
