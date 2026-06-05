@@ -11,6 +11,7 @@ LotLite is a high-fidelity frontend preview of a premium real-estate platform de
 - **Listing Form (Post Property)**: Fully interactive form that allows owners to publish new listings directly into the browser memory (persists using `localStorage`).
 - **Persistent Favorites**: Save your preferred listings by clicking the heart button on cards; favorites are synced automatically with `localStorage` across page reloads.
 - **Responsive Dark/Light Mode**: Premium glassmorphism design tokens optimized for both dark and light styling themes.
+- **Role-Based Multi-Module Dashboard**: Adaptively presents customized KPI cards, lead pipelines, checklist tasks, chat lists, and settings based on user roles (Buyer, Owner, Agent) with independent visibility, modular rendering logic, and split upcoming/completed visit requests.
 
 ## File Structure
 

@@ -62,6 +62,17 @@ graph TD
   
   *(where $P$ is principal, $r$ is monthly interest rate, and $n$ is tenure in months).*
 
+### E. Modular Dashboard & Role-Based Layout
+* **Architecture**: The dashboard operates on `#dashboard?tab=x` query parameters in the client-side router, executing a simulated 400ms skeleton loading shimmer transition on navigation.
+* **CSS Panel Visibility**: Uses explicit CSS visibility tokens:
+  ```css
+  .dashboard-panel { display: none !important; }
+  .dashboard-panel.active { display: block !important; }
+  ```
+  This ensures that only a single active tab renders, preventing panel overlapping or stacked listings.
+* **Modular JavaScript Render API**: Built as an object-oriented rendering system on `UI`. Monolithic UI scripts are decomposed into dedicated sub-render functions: `renderDashboard()`, `renderProfile()`, `renderFavorites()`, `renderAlerts()`, `renderVisits()`, `renderMessages()`, `renderSettings()`, etc.
+* **Split Visits Table Logic**: Segregates the scheduled property inspection database into distinct tables: Upcoming Site Visits (Pending/Confirmed) and Past & Completed Visits (Completed/Closed/Cancelled/Declined).
+
 ---
 
 ## 3. Future Roadmap: How the Web App Will Be Built Out

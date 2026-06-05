@@ -82,6 +82,7 @@ To transition from a simple search directory to a full business engine, we must 
 
 ### Module 1: Verified Agent & Builder CRM Portal
 * **What it is**: A dedicated login area for brokers, agents, and builders to manage their property inventory.
+* **Status**: Frontend UI prototyped and refactored. Inventory grid, leads list, profile form, and KPI analytics are implemented as modular views inside the dynamic dashboard.
 * **Features**:
   * Upload properties in bulk via Excel/CSV sheets.
   * Performance tracker dashboard: Check how many buyers viewed a listing, clicked "View Phone Number", or downloaded a brochure.
@@ -90,6 +91,7 @@ To transition from a simple search directory to a full business engine, we must 
 
 ### Module 2: Visit Scheduler & Booking Calendar
 * **What it is**: Allows buyers to schedule physical site visits directly from the property details page.
+* **Status**: Frontend UI prototyped and refactored. Site visit requests are managed through split "Upcoming Site Visits" and "Past & Completed Visits" tables inside the dashboard.
 * **Features**:
   * The buyer selects a date and time slot (e.g., Saturday, 10:00 AM - 12:00 PM).
   * The system checks the agent’s calendar availability.
@@ -98,6 +100,7 @@ To transition from a simple search directory to a full business engine, we must 
 
 ### Module 3: Real-Time Chat & Lead Routing System
 * **What it is**: A messaging box that connects buyers directly to sellers/agents without revealing private phone numbers instantly.
+* **Status**: Frontend UI prototyped and refactored. Interactive direct chat panel with contact selection, real-time message bubble renders, and search filters is completed.
 * **Features**:
   * "Chat on WhatsApp" button which tracks the lead and triggers a redirect with a pre-filled text.
   * Internal chat box with message history.
