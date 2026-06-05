@@ -1,0 +1,263 @@
+Build a complete enterprise-grade Real Estate Platform named "Lotlite Real Estate" focused on Pune, India.
+
+Goal:
+Create a production-ready platform comparable to leading Indian real estate portals with modern UI, scalable backend, SEO optimization, lead management, agent dashboards, admin dashboards, and cloud deployment.
+
+TECH STACK
+
+Frontend:
+- Next.js 15 App Router
+- React 19
+- TypeScript
+- Tailwind CSS
+- Shadcn UI
+- Responsive Mobile First Design
+
+Backend:
+- Node.js
+- Next.js API Routes
+- JWT Authentication
+- Role Based Access Control
+
+Database:
+- MongoDB Atlas
+
+Cloud:
+- Vercel Deployment
+- Cloudinary Media Storage
+- Cloudflare CDN
+
+USER ROLES
+
+1. Visitor
+2. Registered User
+3. Agent
+4. Builder
+5. Admin
+
+PUBLIC WEBSITE
+
+Homepage:
+- Hero Banner
+- Search Property
+- Buy Property
+- Rent Property
+- Commercial Property
+- Featured Properties
+- Verified Properties
+- Top Pune Localities
+- Testimonials
+- Footer
+
+Locations:
+- Hinjawadi
+- Wakad
+- Baner
+- Kharadi
+- Hadapsar
+- Magarpatta
+- Pimpri-Chinchwad
+- Viman Nagar
+- Kothrud
+- Bavdhan
+
+PROPERTY MODULE
+
+Property Fields:
+- Title
+- Description
+- Price
+- Area
+- BHK
+- Property Type
+- Furnishing
+- Parking
+- Images
+- Videos
+- Amenities
+- Latitude
+- Longitude
+- Builder
+- Agent
+
+Property Features:
+- Search
+- Filters
+- Sort
+- Compare
+- Save Property
+- Share Property
+- Similar Properties
+
+PROPERTY DETAILS PAGE
+
+- Gallery
+- Video Tour
+- Amenities
+- Map
+- Agent Details
+- WhatsApp Button
+- Lead Form
+- Similar Listings
+
+AUTHENTICATION
+
+- Signup
+- Login
+- JWT
+- Forgot Password
+- Reset Password
+- Email Verification
+
+AGENT DASHBOARD
+
+- Add Property
+- Edit Property
+- Delete Property
+- Upload Images
+- View Leads
+- Manage Profile
+- Lead Status Tracking
+
+ADMIN DASHBOARD
+
+Dashboard:
+- Total Users
+- Total Agents
+- Total Properties
+- Total Leads
+
+Management:
+- Users
+- Agents
+- Builders
+- Properties
+- Leads
+
+Approvals:
+- Approve Property
+- Reject Property
+- Suspend Agent
+
+CRM
+
+Lead Status:
+- New
+- Contacted
+- Site Visit
+- Negotiation
+- Closed
+
+LEAD MANAGEMENT
+
+Store:
+- Name
+- Phone
+- Email
+- Property
+- Notes
+- Status
+
+SEO
+
+Generate:
+- Dynamic Meta Tags
+- Open Graph
+- Schema Markup
+- Sitemap
+- Robots.txt
+
+PERFORMANCE
+
+- Lazy Loading
+- Image Optimization
+- Pagination
+- Caching
+- Code Splitting
+
+SECURITY
+
+- JWT Middleware
+- Input Validation
+- Rate Limiting
+- XSS Protection
+- CSRF Protection
+
+DATABASE MODELS
+
+User
+Agent
+Builder
+Property
+Lead
+Review
+SavedProperty
+City
+Locality
+
+API
+
+Create complete REST APIs for:
+- Authentication
+- Properties
+- Leads
+- Users
+- Agents
+- Admin
+
+TESTING
+
+- Unit Testing
+- Integration Testing
+- E2E Testing
+
+DEVOPS
+
+Generate:
+- Environment Variables
+- Dockerfile
+- GitHub Actions CI/CD
+- Vercel Deployment Configuration
+
+OUTPUT
+
+Generate:
+1. Complete folder structure
+2. Database schemas
+3. API routes
+4. Frontend pages
+5. Dashboard UI
+6. Authentication flow
+7. Deployment guide
+8. MongoDB setup guide
+9. Cloudinary setup guide
+10. Production launch checklist
+
+Code must be production-ready, scalable for 100,000+ monthly visitors, SEO optimized, mobile responsive, and ready for deployment to GitHub and Vercel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   task
+ 
+1. Edit User Profile
+     Update your personal information for contact cards
+
+2.   User Role sigup 
+
+
+
+
+
