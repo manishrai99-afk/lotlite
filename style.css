@@ -151,7 +151,6 @@ img {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-top: var(--header-height);
 }
 
 main {
@@ -183,10 +182,8 @@ main {
 /* --- HEADER / NAVIGATION --- */
 header {
     height: var(--header-height);
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
     z-index: 100;
     display: flex;
     align-items: center;
@@ -3030,72 +3027,5 @@ body.dark-mode .chat-bubble.bubble-them {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
         max-height: 200px;
-    }
-}
-
-/* --- DESKTOP VIEWPORT LAYOUT LOCK FOR DASHBOARD --- */
-@media (min-width: 769px) {
-    html.dashboard-active, body.dashboard-active {
-        height: 100% !important;
-        overflow: hidden !important;
-    }
-    body.dashboard-active {
-        position: fixed !important;
-        width: 100% !important;
-        top: 0 !important;
-        left: 0 !important;
-    }
-    body.dashboard-active footer {
-        display: none !important;
-    }
-    body.dashboard-active #app-shell {
-        height: 100vh !important;
-        overflow: hidden !important;
-        padding-top: var(--header-height) !important;
-    }
-    body.dashboard-active main {
-        height: calc(100vh - var(--header-height)) !important;
-        overflow: hidden !important;
-    }
-    body.dashboard-active #section-dashboard {
-        height: 100% !important;
-        overflow: hidden !important;
-    }
-    body.dashboard-active .dashboard-wrapper {
-        height: 100% !important;
-        overflow: hidden !important;
-    }
-    body.dashboard-active .dashboard-sidebar {
-        height: 100% !important;
-        overflow-y: auto !important;
-    }
-    body.dashboard-active .dashboard-main-content {
-        height: 100% !important;
-        overflow-y: auto !important;
-    }
-}
-
-/* --- MOBILE HEADER ACTIONS OPTIMIZATION --- */
-@media (max-width: 768px) {
-    header {
-        padding: 0 12px !important;
-    }
-    .nav-actions {
-        gap: 8px !important;
-    }
-    #btn-post-property span {
-        display: none !important;
-    }
-    #btn-post-property {
-        padding: 10px !important;
-        border-radius: var(--radius-full) !important;
-    }
-    .header-user-menu {
-        padding: 4px !important;
-        background: transparent !important;
-        border: none !important;
-    }
-    .header-user-menu .header-username {
-        display: none !important;
     }
 }
