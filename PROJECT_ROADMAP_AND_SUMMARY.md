@@ -41,7 +41,7 @@ graph TD
 
 ### A. Client-Side Hash Routing
 * **Implementation**: Located in `app.js` under the `Router` object. 
-* **Mechanism**: It listens to browser `hashchange` events (e.g., `#home`, `#search`, `#property?id=prop-1`). 
+* **Mechanism**: It listens to browser `hashchange` events (e.g., `#home`, `#search`, `#property?id=prop-1`, `#dashboard?tab=overview`). It supports URL query parameter-based dashboard tab activation, translates tab synonyms (such as `favorites` to the internal `saved` tab), handles role-based access validation, and automatically persists/restores the last active tab state across page refreshes via `localStorage`.
 * **Advantage**: Provides a Single Page Application (SPA) feel. Instead of reloading the page, JavaScript hides inactive sections (marked with class `.view-section`) and displays the active section. It also parses URL search queries to pre-fill search bars.
 
 ### B. Custom State Management (`AppState`)

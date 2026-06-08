@@ -3407,13 +3407,63 @@ const Router = {
         } else if (routePath === 'favorites') {
             UI.renderFavorites();
         } else if (routePath === 'dashboard') {
-            let activeTab = 'overview';
+            let activeTab = '';
             if (queryStr) {
                 const params = new URLSearchParams(queryStr);
                 if (params.has('tab')) {
                     activeTab = params.get('tab');
                 }
             }
+
+            // Map user-requested 'favorites' to internal 'saved' tab
+            if (activeTab === 'favorites') {
+                activeTab = 'saved';
+            }
+
+            const user = state.session.currentUser;
+
+            // Validate dashboard tab permissions based on user role
+            if (user) {
+                const buyerTabs = ['overview', 'profile', 'saved', 'alerts', 'visits', 'messages', 'settings'];
+                const ownerTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'analytics', 'messages', 'settings'];
+                const agentTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'followups', 'analytics', 'messages', 'settings'];
+                
+                let validTabs = buyerTabs;
+                if (user.role === 'Owner') validTabs = ownerTabs;
+                else if (user.role === 'Agent') validTabs = agentTabs;
+                
+                if (activeTab && !validTabs.includes(activeTab)) {
+                    // Invalid tab requested, redirect to overview
+                    window.location.hash = '#dashboard?tab=overview';
+                    return;
+                }
+            }
+
+            // On refresh, page load or default navigation without activeTab
+            if (!activeTab) {
+                // Restore last active tab from localStorage or default to overview
+                activeTab = localStorage.getItem('lotlite_last_dashboard_tab') || 'overview';
+                
+                // Double check if the restored tab is valid for the user's role
+                if (user) {
+                    const buyerTabs = ['overview', 'profile', 'saved', 'alerts', 'visits', 'messages', 'settings'];
+                    const ownerTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'analytics', 'messages', 'settings'];
+                    const agentTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'followups', 'analytics', 'messages', 'settings'];
+                    let validTabs = buyerTabs;
+                    if (user.role === 'Owner') validTabs = ownerTabs;
+                    else if (user.role === 'Agent') validTabs = agentTabs;
+                    if (!validTabs.includes(activeTab)) {
+                        activeTab = 'overview';
+                    }
+                }
+                
+                window.location.hash = `#dashboard?tab=${activeTab}`;
+                return;
+            }
+
+            // Save valid active tab to localStorage for session/refresh persistence
+            localStorage.setItem('lotlite_last_dashboard_tab', activeTab);
+            
             UI.renderDashboardPage(activeTab);
         }
     }
