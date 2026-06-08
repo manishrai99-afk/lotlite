@@ -250,14 +250,4 @@ Code must be production-ready, scalable for 100,000+ monthly visitors, SEO optim
 
 
 
-   task
- 
-1. Edit User Profile
-     Update your personal information for contact cards
-
-2.   User Role sigup 
-
-
-
-
-
+  
