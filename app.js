@@ -3334,6 +3334,15 @@ const Router = {
         const targetView = document.getElementById(viewId);
         if (targetView) targetView.classList.add('active');
 
+        // Toggle dashboard-active class on html and body for layout constraints
+        if (routePath === 'dashboard') {
+            document.documentElement.classList.add('dashboard-active');
+            document.body.classList.add('dashboard-active');
+        } else {
+            document.documentElement.classList.remove('dashboard-active');
+            document.body.classList.remove('dashboard-active');
+        }
+
         // Scroll to top
         window.scrollTo(0, 0);
 
