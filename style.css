@@ -117,8 +117,17 @@ button, input, select, textarea {
     font-family: inherit;
     font-size: inherit;
     color: inherit;
-    outline: none;
     border: none;
+}
+
+/* Accessibility: visible focus ring for keyboard navigation */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
 }
 
 img {
@@ -193,6 +202,7 @@ header {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
+    border-radius: 0; /* Override glass-panel border-radius */
     box-shadow: var(--shadow-sm);
     transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
@@ -1884,10 +1894,20 @@ footer {
 
 @media (max-width: 992px) {
     .listings-view-container {
-        grid-template-columns: 280px 1fr; /* Hide map panel by default on tablet */
+        grid-template-columns: 280px 1fr;
+        height: auto; /* Allow natural height when map is hidden */
+        overflow: visible;
     }
     .map-panel {
         display: none;
+    }
+    .filters-panel {
+        height: auto;
+        overflow: visible;
+    }
+    .results-panel {
+        height: auto;
+        overflow: visible;
     }
     .categories-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1908,10 +1928,29 @@ footer {
         font-size: 14px;
     }
     header {
-        padding: 0 5%;
+        padding: 0 4%;
+        gap: 8px;
     }
+    /* Mobile nav: compact horizontal scroll strip */
     nav {
-        display: none; /* Mobile menu needed */
+        display: flex;
+        overflow-x: auto;
+        gap: 4px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        flex-shrink: 1;
+        min-width: 0;
+    }
+    nav::-webkit-scrollbar {
+        display: none;
+    }
+    .nav-link {
+        white-space: nowrap;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    .nav-link::after {
+        display: none; /* Hide underline indicator on mobile */
     }
     .mobile-menu-btn {
         display: flex;
@@ -1921,12 +1960,16 @@ footer {
     }
     .search-bar-body {
         grid-template-columns: 1fr;
+        padding: 12px 16px;
     }
     .search-col {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 12px;
         padding-right: 0;
+    }
+    .search-col:last-of-type {
+        border-bottom: none;
     }
     .listings-view-container {
         grid-template-columns: 1fr;
@@ -2141,7 +2184,9 @@ footer {
     margin-top: 4px;
     min-height: 18px;
     font-weight: 500;
-}/* Dashboard panels visibility control */
+}
+
+/* --- DASHBOARD PANEL VISIBILITY CONTROL --- */
 .dashboard-panel {
     display: none !important;
 }
@@ -2583,7 +2628,8 @@ footer {
 .dashboard-messages-container {
     display: grid;
     grid-template-columns: 320px 1fr;
-    height: 600px;
+    min-height: 500px;
+    max-height: 80vh;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
@@ -2853,7 +2899,7 @@ body.dark-mode .skeleton::after {
 }
 
 .chart-bar:hover {
-    fill: var(--primary-dark);
+    fill: var(--primary-hover);
 }
 
 .chart-grid-line {

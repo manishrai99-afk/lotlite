@@ -1304,12 +1304,19 @@ class AppState {
         const notif = document.getElementById('notification-toast');
         if (!notif) return;
         
+        // Debounce: clear any pending hide timer to prevent overlap
+        if (this._notifTimer) {
+            clearTimeout(this._notifTimer);
+            this._notifTimer = null;
+        }
+        
         notif.querySelector('h4').textContent = title;
         notif.querySelector('p').textContent = message;
         notif.classList.add('active');
         
-        setTimeout(() => {
+        this._notifTimer = setTimeout(() => {
             notif.classList.remove('active');
+            this._notifTimer = null;
         }, 3500);
     }
 }
@@ -2055,29 +2062,26 @@ const UI = {
         const targetPanel = document.getElementById(`panel-${activeTab}`);
         if (targetPanel) targetPanel.classList.add('active');
 
-        // 4. Update titles
+        // 4. Update tab titles and subtitles using complete mapping
         const tabTitle = document.getElementById('dashboard-tab-title');
         const tabSubtitle = document.getElementById('dashboard-tab-subtitle');
         if (tabTitle && tabSubtitle) {
-            const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
-            tabTitle.textContent = `${capitalize(activeTab)} View`;
-            tabSubtitle.textContent = `LotLite real-estate management console for ${user.role}s`;
-            if (activeTab === 'overview') {
-                tabTitle.textContent = "Overview Dashboard";
-                tabSubtitle.textContent = `Welcome back to your LotLite management console, ${user.name}.`;
-            } else if (activeTab === 'saved') {
-                tabTitle.textContent = user.role === 'Buyer' ? "Favorites Folder" : "Saved Properties";
-                tabSubtitle.textContent = "Quick access list of bookmarked listings";
-            } else if (activeTab === 'listings') {
-                tabTitle.textContent = user.role === 'Agent' ? "Active Inventory" : "My Listed Properties";
-                tabSubtitle.textContent = "Review and edit your active property offerings";
-            } else if (activeTab === 'leads') {
-                tabTitle.textContent = user.role === 'Agent' ? "Lead Pipeline Control" : "Property Inquiries";
-                tabSubtitle.textContent = "View details of prospects seeking contacts";
-            } else if (activeTab === 'analytics') {
-                tabTitle.textContent = user.role === 'Owner' ? "Property Performance" : "SaaS Performance Analytics";
-                tabSubtitle.textContent = "Quantitative visual charts detailing search & lead analytics";
-            }
+            const tabLabels = {
+                overview:  { title: 'Overview Dashboard',                          subtitle: `Welcome back to your LotLite console, ${user.name}.` },
+                profile:   { title: 'My Profile',                                  subtitle: 'Update your account information and preferences' },
+                saved:     { title: user.role === 'Buyer' ? 'Favorites Folder' : 'Saved Properties', subtitle: 'Quick access list of bookmarked property listings' },
+                listings:  { title: user.role === 'Agent' ? 'Active Inventory' : 'My Listed Properties', subtitle: 'Review and manage your active property offerings' },
+                leads:     { title: user.role === 'Agent' ? 'Lead Pipeline' : 'Property Inquiries', subtitle: 'View and manage prospects who have contacted you' },
+                analytics: { title: user.role === 'Owner' ? 'Property Performance' : 'SaaS Performance Analytics', subtitle: 'Visual charts detailing search and lead analytics' },
+                visits:    { title: user.role === 'Buyer' ? 'Visit Requests' : 'Site Visit Calendar', subtitle: 'Manage your scheduled property inspections' },
+                messages:  { title: 'Messages & Chat',                             subtitle: 'Direct communication with leads, agents, and owners' },
+                alerts:    { title: 'Property Alerts',                             subtitle: 'Get notified when new properties match your criteria' },
+                followups: { title: 'Follow-up Tasks',                             subtitle: 'Track and manage your pending client follow-ups' },
+                settings:  { title: 'Account Settings',                            subtitle: 'Manage notifications, preferences, and account security' }
+            };
+            const label = tabLabels[activeTab] || { title: activeTab.charAt(0).toUpperCase() + activeTab.slice(1), subtitle: '' };
+            tabTitle.textContent = label.title;
+            tabSubtitle.textContent = label.subtitle;
         }
 
         // 5. Populate user display parameters
@@ -3289,6 +3293,19 @@ const Router = {
         'dashboard': 'section-dashboard'
     },
 
+    /**
+     * Returns the list of valid dashboard tab names for a given user role.
+     * Centralised to avoid duplication across permission checks.
+     */
+    getRoleValidTabs(role) {
+        const buyerTabs = ['overview', 'profile', 'saved', 'alerts', 'visits', 'messages', 'settings'];
+        const ownerTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'analytics', 'messages', 'settings'];
+        const agentTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'followups', 'analytics', 'messages', 'settings'];
+        if (role === 'Owner') return ownerTabs;
+        if (role === 'Agent') return agentTabs;
+        return buyerTabs;
+    },
+
     init() {
         window.addEventListener('hashchange', () => this.handleRouting());
         
@@ -3337,13 +3354,19 @@ const Router = {
         // Scroll to top
         window.scrollTo(0, 0);
 
-        // Update nav links active state
+        // Update nav links active state — match by path only (ignoring query strings)
         document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.getAttribute('href') === `#${routePath}`) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
+            const href = link.getAttribute('href') || '';
+            const linkPath = href.substring(1).split('?')[0]; // strip leading # and query
+            let isActive = linkPath === routePath;
+
+            // For search route: also match Buy/Rent tabs by current filter purpose
+            if (routePath === 'search' && href.includes('purpose=')) {
+                const purposeParam = new URLSearchParams(href.split('?')[1] || '').get('purpose');
+                isActive = purposeParam === state.filters.purpose;
             }
+
+            link.classList.toggle('active', isActive);
         });
 
         // Trigger dynamic view renders
@@ -3422,48 +3445,29 @@ const Router = {
 
             const user = state.session.currentUser;
 
-            // Validate dashboard tab permissions based on user role
-            if (user) {
-                const buyerTabs = ['overview', 'profile', 'saved', 'alerts', 'visits', 'messages', 'settings'];
-                const ownerTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'analytics', 'messages', 'settings'];
-                const agentTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'followups', 'analytics', 'messages', 'settings'];
-                
-                let validTabs = buyerTabs;
-                if (user.role === 'Owner') validTabs = ownerTabs;
-                else if (user.role === 'Agent') validTabs = agentTabs;
-                
-                if (activeTab && !validTabs.includes(activeTab)) {
-                    // Invalid tab requested, redirect to overview
+            // Validate dashboard tab permissions using centralised helper
+            if (user && activeTab) {
+                const validTabs = this.getRoleValidTabs(user.role);
+                if (!validTabs.includes(activeTab)) {
                     window.location.hash = '#dashboard?tab=overview';
                     return;
                 }
             }
 
-            // On refresh, page load or default navigation without activeTab
+            // On refresh or default navigation without activeTab — restore last tab
             if (!activeTab) {
-                // Restore last active tab from localStorage or default to overview
                 activeTab = localStorage.getItem('lotlite_last_dashboard_tab') || 'overview';
-                
-                // Double check if the restored tab is valid for the user's role
+                // Validate restored tab against current user's role
                 if (user) {
-                    const buyerTabs = ['overview', 'profile', 'saved', 'alerts', 'visits', 'messages', 'settings'];
-                    const ownerTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'analytics', 'messages', 'settings'];
-                    const agentTabs = ['overview', 'profile', 'saved', 'listings', 'leads', 'visits', 'followups', 'analytics', 'messages', 'settings'];
-                    let validTabs = buyerTabs;
-                    if (user.role === 'Owner') validTabs = ownerTabs;
-                    else if (user.role === 'Agent') validTabs = agentTabs;
-                    if (!validTabs.includes(activeTab)) {
-                        activeTab = 'overview';
-                    }
+                    const validTabs = this.getRoleValidTabs(user.role);
+                    if (!validTabs.includes(activeTab)) activeTab = 'overview';
                 }
-                
                 window.location.hash = `#dashboard?tab=${activeTab}`;
                 return;
             }
 
-            // Save valid active tab to localStorage for session/refresh persistence
+            // Persist valid active tab for session/refresh restoration
             localStorage.setItem('lotlite_last_dashboard_tab', activeTab);
-            
             UI.renderDashboardPage(activeTab);
         }
     }
@@ -3719,11 +3723,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // G. Listen to Auth change event to rebuild headers and redirect if needed
+    // G. Listen to Auth change event to rebuild header and re-render dashboard if active
     window.addEventListener('authChanged', () => {
         UI.updateHeader();
         if (window.location.hash.startsWith('#dashboard')) {
-            UI.renderDashboardPage();
+            // Read the current active tab from URL so re-render preserves the panel
+            const hashStr = window.location.hash.substring(1);
+            const queryStr = hashStr.split('?')[1] || '';
+            const params = new URLSearchParams(queryStr);
+            const activeTab = params.get('tab') || 'overview';
+            UI.renderDashboardPage(activeTab);
         }
     });
 
