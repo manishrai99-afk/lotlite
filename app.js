@@ -1904,7 +1904,7 @@ const UI = {
                 <div class="header-user-menu" id="header-user-menu-trigger">
                     <div class="header-avatar">${user.avatar}</div>
                     <span class="header-username">${user.name}</span>
-                    <div class="dropdown-menu glass-panel" id="header-user-dropdown">
+                    <div class="dropdown-menu" id="header-user-dropdown">
                         <a href="#dashboard" class="dropdown-item">Dashboard</a>
                         <a href="#dashboard?tab=profile" class="dropdown-item">My Profile</a>
                         <a href="#dashboard?tab=saved" class="dropdown-item">Saved Properties</a>
