@@ -225,7 +225,7 @@
                 <div class="listings-view-container">
 
                     <!-- Filters Panel (Left Panel) -->
-                    <aside class="filters-panel">
+                    <aside class="filters-panel" id="filters-panel-desktop">
                         <div class="filters-header">
                             <h2 style="font-size:1.3rem;">Filters</h2>
                             <button class="reset-filters-btn" id="btn-reset-filters">Clear All</button>
@@ -285,7 +285,16 @@
                             </div>
                         </div>
 
-                        <!-- Extra Filters Dropdowns -->
+                        <!-- Area Range (NEW) -->
+                        <div class="filter-group">
+                            <label class="group-title">Area (Sq.Ft.)</label>
+                            <div class="area-range-inputs">
+                                <input type="number" id="filter-area-min" placeholder="Min Sq.Ft" min="0">
+                                <input type="number" id="filter-area-max" placeholder="Max Sq.Ft" min="0">
+                            </div>
+                        </div>
+
+                        <!-- Construction & Furnishing -->
                         <div class="filter-group">
                             <label class="group-title" for="filter-furnishing-select">Furnishing Status</label>
                             <select class="filter-select" id="filter-furnishing-select">
@@ -304,20 +313,57 @@
                                 <option value="Under Construction">Under Construction</option>
                             </select>
                         </div>
+
+                        <!-- Amenities Filter (NEW) -->
+                        <div class="filter-group">
+                            <label class="group-title">Amenities</label>
+                            <div class="amenity-filter-list" id="amenity-filter-list">
+                                <label><input type="checkbox" class="amenity-filter-cb" value="Swimming Pool"> Pool</label>
+                                <label><input type="checkbox" class="amenity-filter-cb" value="Modern Gym"> Gym</label>
+                                <label><input type="checkbox" class="amenity-filter-cb" value="Parking"> Parking</label>
+                                <label><input type="checkbox" class="amenity-filter-cb" value="24/7 Security"> Security</label>
+                                <label><input type="checkbox" class="amenity-filter-cb" value="Clubhouse"> Clubhouse</label>
+                                <label><input type="checkbox" class="amenity-filter-cb" value="Private Garden"> Garden</label>
+                            </div>
+                        </div>
                     </aside>
 
                     <!-- Listings Output Panel (Middle Panel) -->
                     <section class="results-panel">
+                        <!-- Active filter chips (NEW) -->
+                        <div class="filter-chips-row" id="filter-chips-row"></div>
+
                         <div class="results-meta">
-                            <span id="results-count">0 Properties found</span>
-                            <div class="results-sorting">
-                                <label for="filter-sort-select">Sort By:</label>
-                                <select id="filter-sort-select">
-                                    <option value="featured">Featured / Top Matches</option>
-                                    <option value="price-asc">Price: Low to High</option>
-                                    <option value="price-desc">Price: High to Low</option>
-                                    <option value="area-desc">Area: High to Low</option>
-                                </select>
+                            <div class="results-meta-left">
+                                <span id="results-count">0 Properties found</span>
+                            </div>
+                            <div class="results-meta-right">
+                                <!-- Grid / List Toggle (NEW) -->
+                                <div class="view-toggle" id="view-toggle">
+                                    <button class="view-toggle-btn active" id="btn-view-grid" aria-label="Grid View">
+                                        <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm0 10h8v8H3zM13 3h8v8h-8zm0 10h8v8h-8z"/></svg>
+                                        Grid
+                                    </button>
+                                    <button class="view-toggle-btn" id="btn-view-list" aria-label="List View">
+                                        <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                                        List
+                                    </button>
+                                </div>
+                                <!-- Save Search (NEW) -->
+                                <button class="btn-save-search" id="btn-save-search" aria-label="Save this search">
+                                    <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+                                    Save Search
+                                </button>
+                                <div class="results-sorting">
+                                    <label for="filter-sort-select">Sort:</label>
+                                    <select id="filter-sort-select">
+                                        <option value="featured">Featured</option>
+                                        <option value="price-asc">Price: Low to High</option>
+                                        <option value="price-desc">Price: High to Low</option>
+                                        <option value="area-desc">Area: High to Low</option>
+                                        <option value="newest">Newest First</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -368,6 +414,34 @@
 
                 </div>
             </section>
+
+            <!-- Mobile Filter FAB + Drawer (NEW) -->
+            <button class="mobile-filter-fab" id="btn-mobile-filter-open" aria-label="Open Filters">
+                <svg viewBox="0 0 24 24"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39A.998.998 0 0 0 18.95 4H5.04c-.83 0-1.3.95-.79 1.61z"/></svg>
+                Filters
+            </button>
+            <div class="mobile-filter-overlay" id="mobile-filter-overlay"></div>
+            <div class="mobile-filter-drawer" id="mobile-filter-drawer">
+                <div class="drawer-header">
+                    <h3>Filters</h3>
+                    <button class="drawer-close-btn" id="btn-mobile-filter-close" aria-label="Close Filters">&times;</button>
+                </div>
+                <div class="drawer-body" id="mobile-drawer-body">
+                    <!-- Filters cloned into drawer by JS -->
+                </div>
+                <div class="drawer-footer">
+                    <button class="btn-drawer-reset" id="btn-drawer-reset">Clear All</button>
+                    <button class="btn-drawer-apply" id="btn-drawer-apply">Apply Filters</button>
+                </div>
+            </div>
+
+            <!-- Lightbox Overlay (for Property Detail Gallery) -->
+            <div class="detail-lightbox" id="detail-lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
+                <button class="lightbox-close" id="lightbox-close-btn" aria-label="Close Lightbox">&times;</button>
+                <button class="lightbox-nav-btn prev" id="lightbox-prev-btn" aria-label="Previous Image">&#8249;</button>
+                <img class="lightbox-img" id="lightbox-img" src="" alt="Property image full view">
+                <button class="lightbox-nav-btn next" id="lightbox-next-btn" aria-label="Next Image">&#8250;</button>
+            </div>
 
             <!-- 3. PROPERTY DETAILS VIEW -->
             <section id="section-details" class="view-section">

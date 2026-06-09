@@ -853,9 +853,12 @@ class AppState {
             price: 60000000, // Max price range
             bhk: 'All', // 'All', 1, 2, 3, 4
             furnishing: 'All', // 'All', 'Furnished', 'Semi-Furnished', 'Unfurnished'
-            status: 'All' // 'All', 'Ready to Move', 'Under Construction'
+            status: 'All', // 'All', 'Ready to Move', 'Under Construction'
+            areaMin: 0,
+            areaMax: 999999,
+            amenities: []
         };
-        this.sortOption = 'featured'; // 'featured', 'price-asc', 'price-desc', 'area-desc'
+        this.sortOption = 'featured'; // 'featured', 'price-asc', 'price-desc', 'area-desc', 'newest'
         
         // Session & Auth
         this.session = {
@@ -1285,6 +1288,18 @@ class AppState {
             // Status Match
             if (this.filters.status !== 'All' && prop.constructionStatus !== this.filters.status) return false;
 
+            // Area Range Match (NEW)
+            if (this.filters.areaMin > 0 && prop.area < this.filters.areaMin) return false;
+            if (this.filters.areaMax < 999999 && prop.area > this.filters.areaMax) return false;
+
+            // Amenities Match (NEW)
+            if (this.filters.amenities && this.filters.amenities.length > 0) {
+                const hasAll = this.filters.amenities.every(a =>
+                    prop.amenities && prop.amenities.some(pa => pa.toLowerCase().includes(a.toLowerCase()))
+                );
+                if (!hasAll) return false;
+            }
+
             return true;
         }).sort((a, b) => {
             if (this.sortOption === 'featured') {
@@ -1295,6 +1310,8 @@ class AppState {
                 return b.price - a.price;
             } else if (this.sortOption === 'area-desc') {
                 return b.area - a.area;
+            } else if (this.sortOption === 'newest') {
+                return (b.id > a.id) ? 1 : -1;
             }
             return 0;
         });
@@ -1334,6 +1351,55 @@ const UI = {
         const purposeLabel = prop.purpose === 'buy' ? 'For Sale' : 'For Rent';
         const purposeClass = prop.purpose === 'buy' ? 'type-sell' : 'type-rent';
         
+        if (state.viewMode === 'list') {
+            const statusClass = prop.constructionStatus === 'Ready to Move' ? 'status-ready' : 'status-uc';
+            const statusLabel = prop.constructionStatus === 'Ready to Move' ? 'Ready to Move' : 'Under Const.';
+            return `
+                <div class="property-card-list" data-id="${prop.id}">
+                    <div class="list-card-img-wrapper" onclick="UI.navigateToProperty('${prop.id}')" style="cursor: pointer;">
+                        <img src="${prop.image}" alt="${prop.title}" class="list-card-img">
+                        <button class="card-favorite-btn ${isFav}" data-id="${prop.id}" aria-label="Add to favorites" style="position: absolute; top: 12px; right: 12px; z-index: 5;">
+                            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </button>
+                    </div>
+                    <div class="list-card-body">
+                        <div>
+                            <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px;">${prop.type} • ${prop.furnishing}</div>
+                            <h3 class="list-card-title" onclick="UI.navigateToProperty('${prop.id}')" style="cursor: pointer;">${prop.title}</h3>
+                            <div class="list-card-location">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                <span>${prop.location}</span>
+                            </div>
+                        </div>
+                        <div class="list-card-specs">
+                            <div class="list-card-spec">
+                                <svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
+                                <span>${specBHK}</span>
+                            </div>
+                            <div class="list-card-spec">
+                                <svg viewBox="0 0 24 24"><path d="M20 13V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v9H2v7h20v-7h-2zM4 18v-3h6v3H4zm16 0h-8v-3h8v3z"/></svg>
+                                <span>${specBaths}</span>
+                            </div>
+                            <div class="list-card-spec">
+                                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                                <span>${prop.area} Sq.Ft.</span>
+                            </div>
+                        </div>
+                        <p class="list-card-desc" style="margin: 0; font-size: 0.81rem; color: var(--text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${prop.description}</p>
+                    </div>
+                    <div class="list-card-action">
+                        <div style="text-align: right; width: 100%;">
+                            <div class="list-card-badge ${statusClass}" style="display: inline-block; margin-bottom: 8px;">${statusLabel}</div>
+                            <div class="list-card-price" style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--primary);">${prop.priceDisplay}</div>
+                            <div class="list-card-price-meta">Est. ₹${Math.round(prop.price / prop.area).toLocaleString('en-IN')}/sqft</div>
+                        </div>
+                        <button class="list-card-view-btn" onclick="UI.navigateToProperty('${prop.id}')" style="width: 100%; font-weight: 600; padding: 8px 14px;">View Details</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Default Grid Card
         return `
             <div class="property-card" data-id="${prop.id}">
                 <div class="card-img-wrapper" onclick="UI.navigateToProperty('${prop.id}')">
@@ -1416,6 +1482,12 @@ const UI = {
         const mapContainer = document.getElementById('map-pins-overlay');
         
         if (resultsGrid) {
+            if (state.viewMode === 'list') {
+                resultsGrid.className = 'listings-layout-list';
+            } else {
+                resultsGrid.className = 'listings-layout-grid';
+            }
+
             const filtered = state.getFilteredProperties();
             if (resultsCountEl) resultsCountEl.textContent = `${filtered.length} Properties found`;
 
@@ -1567,7 +1639,10 @@ const UI = {
         }
     },
 
-    // Render Property Detailed View Page
+    // =============================================
+    // MODULE 1 — PROPERTY DETAIL PRO PAGE
+    // =============================================
+
     renderPropertyDetail(id) {
         const prop = state.properties.find(p => p.id === id);
         const detailContainer = document.getElementById('property-detail-container');
@@ -1585,162 +1660,507 @@ const UI = {
         }
 
         const isFav = state.favorites.includes(prop.id) ? 'active' : '';
-        const specBHK = prop.bhk ? `${prop.bhk} BHK` : 'Plot / Space';
-        const specBaths = prop.baths ? `${prop.baths} Bathrooms` : '1-2 Bathrooms';
-        const purposeLabel = prop.purpose === 'buy' ? 'For Sale' : 'For Rent';
-        const purposeClass = prop.purpose === 'buy' ? 'type-sell' : 'type-rent';
-        
-        // Generate list of amenities dynamically
-        const amenitiesHTML = prop.amenities.map(a => `
-            <div class="amenity-tag">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>${a}</span>
-            </div>
-        `).join('');
+        const specBHK = prop.bhk ? `${prop.bhk} BHK` : 'Plot / Land Space';
+        const RERA_num = `RERA-MH-2026-${Math.abs(prop.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0))}`;
+
+        // Dynamic multi-image gallery setup
+        const galleryImages = [
+            prop.image,
+            "assets/prop_1.jpg",
+            "assets/prop_2.jpg",
+            "assets/prop_3.jpg"
+        ].filter((img, idx, self) => self.indexOf(img) === idx);
+        while (galleryImages.length < 3) {
+            galleryImages.push("assets/prop_1.jpg");
+        }
+
+        // Dynamically compute connectivity landmarks based on location
+        const city = prop.location.split(',').pop().trim();
+        let nearbyPlaces = [];
+        if (city === 'Pune') {
+            nearbyPlaces = [
+                { name: "Hinjawadi IT Park", dist: "2.5 km", type: "IT Hub" },
+                { name: "Amanora Mall", dist: "4.1 km", type: "Shopping" },
+                { name: "DPS Public School", dist: "1.8 km", type: "Education" },
+                { name: "Jehangir Hospital", dist: "3.2 km", type: "Healthcare" }
+            ];
+        } else if (city === 'Noida') {
+            nearbyPlaces = [
+                { name: "Sector 18 Metro", dist: "1.2 km", type: "Transit" },
+                { name: "DLF Mall of India", dist: "2.0 km", type: "Shopping" },
+                { name: "Amity University", dist: "3.5 km", type: "Education" },
+                { name: "Fortis Hospital", dist: "2.8 km", type: "Healthcare" }
+            ];
+        } else if (city === 'Gurgaon' || city === 'Gurugram') {
+            nearbyPlaces = [
+                { name: "Cyber City Hub", dist: "1.5 km", type: "IT Park" },
+                { name: "Ambience Mall", dist: "2.3 km", type: "Shopping" },
+                { name: "Medanta Medicity", dist: "4.0 km", type: "Healthcare" },
+                { name: "GD Goenka School", dist: "3.1 km", type: "Education" }
+            ];
+        } else {
+            nearbyPlaces = [
+                { name: `${city} Central Plaza`, dist: "1.4 km", type: "Shopping" },
+                { name: "City Public School", dist: "2.0 km", type: "Education" },
+                { name: "City General Hospital", dist: "3.2 km", type: "Healthcare" },
+                { name: "Metro Link Station", dist: "0.8 km", type: "Transit" }
+            ];
+        }
+
+        // Agent profile and stats computation
+        const agentName = prop.agent ? prop.agent.name : "Lotlite Representative";
+        const agentAvatar = prop.agent ? prop.agent.avatar : "LR";
+        const agentPhone = prop.agent ? prop.agent.phone : "+91 99999 88888";
+        const agentEmail = prop.agent ? prop.agent.email : "info@lotlite.com";
+        const reraHash = agentName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const agentExp = (reraHash % 10) + 3;
+        const agentListings = (reraHash % 15) + 5;
+
+        // Compute similar properties
+        const similarProps = state.properties.filter(p => p.id !== prop.id && p.type === prop.type && p.price >= prop.price * 0.6 && p.price <= prop.price * 1.4).slice(0, 4);
+        let similarHTML = '';
+        if (similarProps.length === 0) {
+            similarHTML = '<p class="text-muted" style="padding: 10px 0; grid-column: 1 / -1;">No similar properties in this budget range.</p>';
+        } else {
+            similarHTML = similarProps.map(p => `
+                <div class="similar-prop-card" onclick="UI.navigateToProperty('${p.id}')" style="flex: 0 0 240px; border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-secondary); cursor: pointer; transition: all var(--transition-fast);">
+                    <div style="height: 140px; overflow: hidden; position: relative;">
+                        <img src="${p.image}" alt="${p.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;">${p.type}</div>
+                    </div>
+                    <div style="padding: 12px;">
+                        <h4 style="font-size: 0.88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;">${p.title}</h4>
+                        <p style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">${p.location}</p>
+                        <div style="font-family: var(--font-heading); font-weight: 800; color: var(--primary); font-size: 0.95rem;">${p.priceDisplay}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         detailContainer.innerHTML = `
-            <div class="details-back-nav" onclick="window.history.back()">
-                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-                <span>Back to listings</span>
-            </div>
+            <div class="detail-page-wrapper" style="max-width: 1200px; margin: 0 auto; padding: 20px 4% 80px;">
+                <div class="detail-back-nav" onclick="window.history.back()" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); transition: color var(--transition-fast); margin-bottom: 24px;">
+                    <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    <span>Back to listings</span>
+                </div>
 
-            <div class="details-header-row">
-                <div class="details-title-block">
-                    <h1>${prop.title}</h1>
-                    <div class="details-address-block">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        <span>${prop.location}</span>
-                    </div>
-                </div>
-                <div class="details-price-block">
-                    <span class="details-price">${prop.priceDisplay}</span>
-                    <span class="details-price-meta">Est. ₹${Math.round(prop.price / 100).toLocaleString('en-IN')}/sq.ft. • ${purposeLabel}</span>
-                </div>
-            </div>
-
-            <!-- Image Gallery -->
-            <div class="details-gallery">
-                <div class="gallery-main">
-                    <img src="${prop.image}" alt="${prop.title}">
-                </div>
-                <div class="gallery-side">
-                    <div class="gallery-side-img"><img src="assets/prop_1.jpg" alt="Interior View"></div>
-                    <div class="gallery-side-img"><img src="assets/prop_3.jpg" alt="Amenities Design"></div>
-                </div>
-            </div>
-
-            <!-- Primary Grid -->
-            <div class="details-grid">
-                <div class="details-main-content">
-                    
-                    <!-- Specifications Badge Grid -->
-                    <div class="details-specs-badge-grid">
-                        <div class="detail-spec-box">
-                            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                            <span class="detail-spec-value">${prop.area} sq.ft.</span>
-                            <span class="detail-spec-label">Carpet Area</span>
-                        </div>
-                        <div class="detail-spec-box">
-                            <svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
-                            <span class="detail-spec-value">${specBHK}</span>
-                            <span class="detail-spec-label">Configuration</span>
-                        </div>
-                        <div class="detail-spec-box">
-                            <svg viewBox="0 0 24 24"><path d="M20 13V4c0-.55-.45-1-1-1h-6c-.55 0-1 .45-1 1v9H2v7h20v-7h-2zM4 18v-3h6v3H4zm16 0h-8v-3h8v3z"/></svg>
-                            <span class="detail-spec-value">${specBaths}</span>
-                            <span class="detail-spec-label">Baths</span>
-                        </div>
-                        <div class="detail-spec-box">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                            <span class="detail-spec-value">${prop.constructionStatus}</span>
-                            <span class="detail-spec-label">Status</span>
+                <div class="details-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 24px;">
+                    <div class="detail-title-block">
+                        <h1 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; font-family: var(--font-heading);">${prop.title}</h1>
+                        <div class="details-address-block" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-secondary);">
+                            <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: var(--primary); flex-shrink:0;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span>${prop.location}</span>
                         </div>
                     </div>
-
-                    <!-- Description -->
-                    <div class="details-description-box">
-                        <h3>About this property</h3>
-                        <p>${prop.description}</p>
+                    <div class="details-price-block" style="text-align: right; min-width: 150px;">
+                        <span class="detail-price-main" style="font-size: 1.8rem; font-weight: 800; color: var(--primary); display: block; font-family: var(--font-heading);">${prop.priceDisplay}</span>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">₹${Math.round(prop.price / prop.area).toLocaleString('en-IN')}/sq.ft. • Carpet Area</span>
                     </div>
+                </div>
 
-                    <!-- Amenities -->
-                    <div class="details-amenities-box">
-                        <h3>Facilities & Amenities</h3>
-                        <div class="amenities-tag-list">
-                            ${amenitiesHTML}
-                        </div>
+                <!-- Hero Gallery -->
+                <div class="detail-hero-gallery" style="position: relative; margin-bottom: 24px; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-tertiary); box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+                    <div class="gallery-main-wrapper" id="gallery-main-wrapper" style="position: relative; height: 420px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: zoom-in;">
+                        <img id="gallery-main-img" src="${galleryImages[0]}" alt="${prop.title}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;">
+                        <button class="gallery-nav-btn prev" id="gallery-prev" aria-label="Previous Image" style="position: absolute; left: 16px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all var(--transition-fast); z-index: 10;">&#8249;</button>
+                        <button class="gallery-nav-btn next" id="gallery-next" aria-label="Next Image" style="position: absolute; right: 16px; width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all var(--transition-fast); z-index: 10;">&#8250;</button>
+                        <span class="gallery-counter" id="gallery-counter" style="position: absolute; bottom: 16px; right: 16px; background: rgba(0,0,0,0.7); color: white; padding: 4px 12px; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 600; font-family: var(--font-heading); z-index: 10;">1 / ${galleryImages.length}</span>
                     </div>
-
-                    <!-- EMI Calculator Section (Interactive) -->
-                    <div class="details-emi-box">
-                        <h3>Home Loan & Monthly EMI Calculator</h3>
-                        <div class="emi-calculator-card">
-                            <div class="emi-inputs">
-                                <div class="emi-input-group">
-                                    <label>Down Payment (₹): <span id="val-emi-down">₹0</span></label>
-                                    <input type="range" class="range-slider" id="input-emi-down" min="0" max="${Math.round(prop.price * 0.9)}" step="50000" value="${Math.round(prop.price * 0.2)}">
-                                </div>
-                                <div class="emi-input-group">
-                                    <label>Interest Rate (%): <span id="val-emi-interest">8.5%</span></label>
-                                    <input type="range" class="range-slider" id="input-emi-interest" min="5" max="15" step="0.1" value="8.5">
-                                </div>
-                                <div class="emi-input-group">
-                                    <label>Tenure (Years): <span id="val-emi-tenure">20 Years</span></label>
-                                    <input type="range" class="range-slider" id="input-emi-tenure" min="5" max="30" step="1" value="20">
-                                </div>
+                    <div class="gallery-thumbnails" style="display: flex; gap: 8px; padding: 12px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); overflow-x: auto;">
+                        ${galleryImages.map((img, i) => `
+                            <div class="gallery-thumb ${i === 0 ? 'active' : ''}" data-index="${i}" style="width: 80px; height: 56px; border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all var(--transition-fast); flex-shrink: 0;">
+                                <img src="${img}" alt="Thumbnail ${i+1}" style="width:100%; height:100%; object-fit:cover;">
                             </div>
-                            <div class="emi-results">
-                                <h4>Estimated Monthly Payment</h4>
-                                <div class="emi-monthly-val" id="emi-monthly-output">₹0</div>
-                                <div class="emi-detail-breakdown">
-                                    <span>Principal Loan: <strong id="emi-principal-val">₹0</strong></span>
-                                    <span>Total Interest Paid: <strong id="emi-total-interest">₹0</strong></span>
-                                    <span>Total Payable: <strong id="emi-total-payable">₹0</strong></span>
-                                </div>
-                            </div>
-                        </div>
+                        `).join('')}
                     </div>
-
                 </div>
 
-                <!-- Right Sidebar Contact Panel -->
-                <div>
-                    <div class="details-sidebar-card">
-                        <div class="contact-agent-badge">
-                            <div class="agent-large-avatar">${prop.agent.avatar}</div>
-                            <div class="agent-large-info">
-                                <h4>${prop.agent.name}</h4>
-                                <p>${prop.type === 'Plot' ? 'Developer Team' : 'Verified LotLite Agent'}</p>
-                            </div>
-                        </div>
+                <div class="detail-content-layout" style="display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start;">
+                    <!-- LEFT COLUMN — Specs, Highlights, Amenities, Floor Plan, Location -->
+                    <div class="detail-content-col" style="display: flex; flex-direction: column; gap: 24px;">
                         
-                        <div class="contact-form">
-                            <div class="form-group">
-                                <label for="contact-name">Your Name</label>
-                                <input type="text" id="contact-name" placeholder="John Doe" required>
+                        <!-- A. Property Specs Grid -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                                Property Specifications
+                            </h2>
+                            <div class="spec-badge-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Configuration</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${specBHK}</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Super Area</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${prop.area} sq.ft.</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Carpet Area</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${Math.round(prop.area * 0.88)} sq.ft.</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Built-up Area</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${Math.round(prop.area * 1.12)} sq.ft.</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Possession</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${prop.constructionStatus === 'Ready to Move' ? 'Immediate' : 'In 6 Months'}</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Age of Property</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${prop.age || 'New Launch'}</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Furnishing</span>
+                                    <span class="spec-value" style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${prop.furnishing || 'Unfurnished'}</span>
+                                </div>
+                                <div class="spec-badge" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <span class="spec-label" style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">RERA Reg No.</span>
+                                    <span class="spec-value" style="font-size: 0.75rem; font-weight: 700; color: var(--success); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${RERA_num}</span>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="contact-email">Email Address</label>
-                                <input type="email" id="contact-email" placeholder="john@example.com" required>
+                        </div>
+
+                        <!-- B. About / Description Card -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M14 17H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2zM19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                                About This Property
+                            </h2>
+                            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.65; white-space: pre-line;">${prop.description}</p>
+                        </div>
+
+                        <!-- C. Key Highlights Card -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5h2v2h-2zm0 4h2v2h-2z"/></svg>
+                                Key Highlights
+                            </h2>
+                            <div class="highlights-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                                <div class="highlight-card" style="display: flex; gap: 12px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-tertiary);">
+                                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary); flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    <div>
+                                        <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 2px;">Vastu Compliant</h4>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">East facing front entrance portal</p>
+                                    </div>
+                                </div>
+                                <div class="highlight-card" style="display: flex; gap: 12px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-tertiary);">
+                                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary); flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    <div>
+                                        <h4>Prime Location</h4>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">Located in high-demand residential core</p>
+                                    </div>
+                                </div>
+                                <div class="highlight-card" style="display: flex; gap: 12px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-tertiary);">
+                                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary); flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    <div>
+                                        <h4>Smart Design</h4>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">Excellent natural cross ventilation & light</p>
+                                    </div>
+                                </div>
+                                <div class="highlight-card" style="display: flex; gap: 12px; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-tertiary);">
+                                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--primary); flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    <div>
+                                        <h4>Safety Assured</h4>
+                                        <p style="font-size: 0.75rem; color: var(--text-secondary);">Full 3-tier security & CCTV monitoring</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="contact-phone">Phone Number</label>
-                                <input type="tel" id="contact-phone" placeholder="+91 98765 XXXXX" required>
+                        </div>
+
+                        <!-- D. Amenities Card -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                Premium Amenities & Perks
+                            </h2>
+                            <div class="amenity-icon-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                ${prop.amenities.map(a => `
+                                    <div class="amenity-icon-card" style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.82rem; font-weight: 500;">
+                                        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: var(--primary); flex-shrink: 0;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                        <span>${a}</span>
+                                    </div>
+                                `).join('')}
                             </div>
-                            <div class="form-group">
-                                <label for="contact-msg">Message</label>
-                                <textarea id="contact-msg">I am interested in "${prop.title}" (${prop.id}). Please contact me with more information.</textarea>
+                        </div>
+
+                        <!-- E. Interactive Floor Plan Layout -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                                Floor Plan Layout
+                            </h2>
+                            <div class="floor-plan-box" id="floor-plan-box" style="cursor: zoom-in; border: 1px dashed var(--border-color); border-radius: var(--radius-md); overflow: hidden; display: flex; justify-content: center; align-items: center; background: var(--bg-tertiary);">
+                                ${this._generateFloorPlanSVG(prop.bhk || 2)}
                             </div>
-                            <button class="btn-primary" style="justify-content: center; width:100%" onclick="UI.submitContactForm('${prop.agent.name}')">Contact Agent</button>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; text-align:center;">Click layout schematic to open zooming viewer</p>
+                        </div>
+
+                        <!-- F. Map & Connectivity Section -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+                                Location & Nearby Connectivity
+                            </h2>
+                            <div style="height: 200px; background: linear-gradient(135deg, var(--primary-light), var(--bg-secondary)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 18px; border:1px solid var(--border-color); position:relative; overflow:hidden;">
+                                <div style="position:absolute; inset:0; opacity:0.1; background-image: radial-gradient(var(--text-muted) 1px, transparent 0), radial-gradient(var(--text-muted) 1px, transparent 0); background-size: 8px 8px; background-position: 0 0, 4px 4px;"></div>
+                                <div style="z-index:1; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                                    <div style="width: 40px; height: 40px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(var(--primary-rgb),0.3);">
+                                        <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:currentColor;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                    </div>
+                                    <span>Built-in Interactive Micro-Map</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <h4 style="font-size:0.85rem; font-weight:700; margin-bottom:4px; text-transform:uppercase; color:var(--text-muted); letter-spacing:0.5px;">Landmarks & Distance:</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                                    ${nearbyPlaces.map(n => `
+                                        <div class="nearby-place-chip" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.8rem; transition: transform var(--transition-fast);" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='none'">
+                                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                                <span style="font-weight: 700; color:var(--text-primary);">${n.name}</span>
+                                                <span style="font-size: 0.68rem; color: var(--text-muted); font-weight:600;">${n.type}</span>
+                                            </div>
+                                            <span style="font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px; font-size:0.75rem;">${n.dist}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- G. Seller / Builder Agent Card -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                Builder & Agent Desk
+                            </h2>
+                            <div class="agent-profile-card" style="display: flex; gap: 20px; align-items: center; padding: 18px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); flex-wrap: wrap;">
+                                <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; flex-shrink: 0; box-shadow: 0 4px 10px rgba(var(--primary-rgb),0.2);">${agentAvatar}</div>
+                                <div style="flex: 1; min-width: 220px;">
+                                    <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 2px 0; display:flex; align-items:center; gap:8px;">
+                                        ${agentName}
+                                        <span style="background:var(--success); color:white; font-size:0.65rem; padding:2px 8px; border-radius:var(--radius-full); font-weight:600; letter-spacing:0.5px;">VERIFIED SELLER</span>
+                                    </h3>
+                                    <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px; font-weight:500;">Prime LotLite Real Estate Executive</p>
+                                    <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                                        <div class="agent-stat" style="display:flex; flex-direction:column;"><strong style="font-size: 0.95rem; font-weight:800; color:var(--text-primary);">${agentExp}+ Yrs</strong><span style="font-size: 0.68rem; color:var(--text-muted);">Experience</span></div>
+                                        <div class="agent-stat" style="display:flex; flex-direction:column;"><strong style="font-size: 0.95rem; font-weight:800; color:var(--text-primary);">${agentListings}</strong><span style="font-size: 0.68rem; color:var(--text-muted);">Active Listings</span></div>
+                                        <div class="agent-stat" style="display:flex; flex-direction:column;"><strong style="font-size: 0.95rem; font-weight:800; color:var(--text-primary);">4.${(reraHash % 5) + 5}★</strong><span style="font-size: 0.68rem; color:var(--text-muted);">User Rating</span></div>
+                                    </div>
+                                </div>
+                                <div class="agent-contact-btns" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 12px;">
+                                    <button class="btn-agent-call" style="padding: 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size:0.8rem; color:var(--text-primary); transition: all var(--transition-fast);" onclick="state.showNotification('Calling Agent', 'Connecting you to ${agentName.replace(/'/g, "\\'")}...')">
+                                        <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                                        Call
+                                    </button>
+                                    <button class="btn-agent-wa" style="padding: 10px; background: #25D366; border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size:0.8rem; color:white; transition: all var(--transition-fast);" onclick="state.showNotification('WhatsApp', 'Opening WhatsApp chat for ${agentName.replace(/'/g, "\\'")}...')">
+                                        <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M16.75 13.96c.25.13.41.2.46.3.06.11.04.61-.21 1.18-.2.56-1.24 1.1-1.7 1.12-.46.02-.47.36-2.96-.73-2.49-1.09-3.99-3.75-4.11-3.92-.12-.17-.96-1.38-.92-2.61.05-1.22.69-1.8.95-2.04.24-.22.51-.29.68-.26h.47c.15 0 .36-.06.55.45l.69 1.87c.06.13.1.28.01.44l-.27.42-.39.42c-.12.12-.26.25-.12.5.12.26.62 1.09 1.32 1.78.91.88 1.71 1.17 1.95 1.3.24.14.39.12.54-.04l.81-.94c.19-.25.35-.19.58-.11l1.67.88M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10c-1.97 0-3.8-.57-5.35-1.55L2 22l1.55-4.65A9.969 9.969 0 0 1 2 12 10 10 0 0 1 12 2m0 2a8 8 0 0 0-8 8c0 1.72.54 3.31 1.46 4.61L4.5 19.5l2.89-.96A7.95 7.95 0 0 0 12 20a8 8 0 0 0 8-8 8 8 0 0 0-8-8z"/></svg>
+                                        Chat
+                                    </button>
+                                    <button class="btn-agent-inquiry" style="padding: 10px; background: var(--primary); border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700; font-size:0.8rem; color:white; transition: all var(--transition-fast);" onclick="state.showNotification('Inquiry Sent', 'Inquiry for ${prop.title} has been logged for ${agentName.replace(/'/g, "\\'")}!')">
+                                        <svg viewBox="0 0 24 24" style="width:14px; height:14px; fill:currentColor;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                        Inquire
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- H. Similar Properties Section -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 5c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg>
+                                Similar Properties You May Like
+                            </h2>
+                            <div class="similar-props-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px;">
+                                ${similarHTML}
+                            </div>
+                        </div>
+
+                        <!-- I. Advanced EMI Calculator Card (MODULE 2B) -->
+                        <div class="detail-section-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+                            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);">
+                                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--primary);"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
+                                Interactive EMI & Loan Desk
+                            </h2>
+                            <div class="emi-calculator-card" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; padding: 18px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); flex-wrap: wrap;">
+                                <div class="emi-inputs" style="display: flex; flex-direction: column; gap: 14px;">
+                                    <div class="emi-input-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: space-between;">Down Payment: <span id="val-emi-down" style="color:var(--primary); font-weight:700;">₹0</span></label>
+                                        <input type="range" class="range-slider" id="input-emi-down" min="0" max="${Math.round(prop.price * 0.95)}" step="50000" value="${Math.round(prop.price * 0.2)}" style="width: 100%; accent-color: var(--primary);">
+                                    </div>
+                                    <div class="emi-input-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: space-between;">Loan Interest Rate: <span id="val-emi-interest" style="color:var(--primary); font-weight:700;">8.5%</span></label>
+                                        <input type="range" class="range-slider" id="input-emi-interest" min="5.0" max="15.0" step="0.1" value="8.5" style="width: 100%; accent-color: var(--primary);">
+                                    </div>
+                                    <div class="emi-input-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: space-between;">Tenure Period: <span id="val-emi-tenure" style="color:var(--primary); font-weight:700;">20 Years</span></label>
+                                        <input type="range" class="range-slider" id="input-emi-tenure" min="5" max="30" step="1" value="20" style="width: 100%; accent-color: var(--primary);">
+                                    </div>
+                                </div>
+                                <div class="emi-results" style="padding: 16px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                                    <h4 style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; letter-spacing:0.5px;">Monthly Installment</h4>
+                                    <div class="emi-monthly-val" id="emi-monthly-output" style="font-size: 1.6rem; font-weight: 800; color: var(--primary); font-family: var(--font-heading); margin-bottom: 12px;">₹0</div>
+                                    <div class="emi-detail-breakdown" style="display: flex; flex-direction: column; gap: 6px; width: 100%; font-size: 0.72rem; border-top: 1px solid var(--border-color); padding-top: 12px; text-align: left;">
+                                        <div style="display:flex; justify-content:space-between;"><span>Principal Loan:</span><strong id="emi-principal-val">₹0</strong></div>
+                                        <div style="display:flex; justify-content:space-between;"><span>Total Interest:</span><strong id="emi-total-interest" style="color:var(--warning);">₹0</strong></div>
+                                        <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px dashed var(--border-color); padding-top:4px; margin-top:2px;"><span>Total Payable:</span><strong id="emi-total-payable">₹0</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN — Sticky Contact Card (Desktop Sidebar) -->
+                    <div class="detail-sticky-col" style="position: sticky; top: calc(var(--header-height) + 24px);">
+                        <div class="sticky-contact-card" style="padding: 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; font-family: var(--font-heading);">Schedule Private Consultation</h3>
+                            <div class="sticky-price-display" style="font-size: 1.55rem; font-weight: 800; color: var(--primary); margin: 6px 0; font-family: var(--font-heading);">${prop.priceDisplay}</div>
+                            <div class="sticky-price-sqft" style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 20px;">₹${Math.round(prop.price / prop.area).toLocaleString('en-IN')}/sq.ft. • Super Area ${prop.area} sqft</div>
+                            <div class="sticky-contact-btns" style="display: flex; flex-direction: column; gap: 10px;">
+                                <button class="btn-contact-primary" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; transition: background var(--transition-fast);" onclick="state.showNotification('Agent Contacted', '${agentName.replace(/'/g, "\\'")} will contact you shortly.')">
+                                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                                    Contact Agent
+                                </button>
+                                <button class="btn-contact-secondary" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; transition: all var(--transition-fast);" onclick="state.showNotification('Visit Scheduled', 'Site visit request registered! Confirmation will be sent via SMS.')">
+                                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>
+                                    Schedule Site Visit
+                                </button>
+                            </div>
+                            <p class="sticky-disclaimer" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 14px; text-align: center; line-height: 1.45;">By clicking, you consent to receive callback from agent on registered mobile number.</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Mobile CTA Bar (Fixed to bottom for responsive screens) -->
+            <div class="detail-mobile-cta" id="detail-mobile-cta" style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-top: 1px solid var(--border-color); padding: 12px 20px; display: none; gap: 10px; z-index: 200; box-shadow: 0 -6px 20px rgba(0,0,0,0.08);">
+                <button class="btn-contact-secondary" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.82rem;" onclick="state.showNotification('Visit Scheduled', 'Site visit request registered! Confirmation will be sent via SMS.')">
+                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>
+                    Schedule Visit
+                </button>
+                <button class="btn-contact-primary" style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.82rem;" onclick="state.showNotification('Agent Contacted', '${agentName.replace(/'/g, "\\'")} will contact you shortly.')">
+                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                    Contact Agent
+                </button>
             </div>
         `;
 
-        // Initialize EMI calculator events
+        // Initialize active gallery control and EMI calculator sliders
+        this.initDetailGallery(galleryImages);
         this.initEMICalculator(prop.price);
+
+        // Floor plan image expand lightbox trigger
+        const floorPlanBox = document.getElementById('floor-plan-box');
+        if (floorPlanBox) {
+            floorPlanBox.addEventListener('click', () => {
+                const lb = document.getElementById('detail-lightbox');
+                const lbImg = document.getElementById('lightbox-img');
+                if (lb && lbImg) {
+                    lbImg.src = galleryImages[0];
+                    lb.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
+    },
+
+    // Dynamic schematic SVG floor plan builder based on BHK configuration
+    _generateFloorPlanSVG(bhk) {
+        const rooms = [];
+        if (bhk >= 1) rooms.push({ x: 15, y: 15, w: 110, h: 85, label: "Master Bed" });
+        if (bhk >= 2) rooms.push({ x: 135, y: 15, w: 100, h: 85, label: "Bedroom 2" });
+        if (bhk >= 3) rooms.push({ x: 245, y: 15, w: 100, h: 85, label: "Bedroom 3" });
+        if (bhk >= 4) rooms.push({ x: 245, y: 110, w: 100, h: 80, label: "Guest Suite" });
+        rooms.push({ x: 15, y: 110, w: 170, h: 105, label: "Living / Lounge" });
+        rooms.push({ x: 195, y: 110, w: 40, h: 60, label: "Kitchen" });
+        rooms.push({ x: 195, y: 175, w: 40, h: 40, label: "Bath 1" });
+        rooms.push({ x: 245, y: 195, w: 100, h: 20, label: "Balcony" });
+
+        const svgRooms = rooms.map(r => `
+            <rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="var(--primary-light)" stroke="var(--border-color)" stroke-width="1.5" rx="3"/>
+            <text x="${r.x + r.w/2}" y="${r.y + r.h/2}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text-secondary)" font-family="Inter, sans-serif" font-weight="600">${r.label}</text>
+        `).join('');
+
+        return `<svg viewBox="0 0 360 240" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-height:260px; padding:16px; box-sizing:border-box;">
+            <rect width="360" height="240" fill="var(--bg-tertiary)" rx="8"/>
+            ${svgRooms}
+            <text x="180" y="232" text-anchor="middle" font-size="8.5" fill="var(--text-muted)" font-family="Inter, sans-serif" font-weight="700">${bhk} BHK Floor Layout Plan (Click to expand)</text>
+        </svg>`;
+    },
+
+    // Multi-Image Gallery Carousel Controllers (Mobile Swipe, Buttons and Lightbox)
+    initDetailGallery(images) {
+        let current = 0;
+        const mainImg = document.getElementById('gallery-main-img');
+        const counter = document.getElementById('gallery-counter');
+        const thumbs = document.querySelectorAll('.gallery-thumb');
+        const lightbox = document.getElementById('detail-lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxClose = document.getElementById('lightbox-close-btn');
+        const lightboxPrev = document.getElementById('lightbox-prev-btn');
+        const lightboxNext = document.getElementById('lightbox-next-btn');
+
+        const setImage = (idx) => {
+            current = (idx + images.length) % images.length;
+            if (mainImg) mainImg.src = images[current];
+            if (counter) counter.textContent = `${current + 1} / ${images.length}`;
+            thumbs.forEach((t, i) => {
+                if (i === current) {
+                    t.style.borderColor = 'var(--primary)';
+                    t.style.opacity = '1';
+                } else {
+                    t.style.borderColor = 'transparent';
+                    t.style.opacity = '0.6';
+                }
+            });
+            if (lightboxImg && lightbox?.classList.contains('open')) {
+                lightboxImg.src = images[current];
+            }
+        };
+
+        // Click actions
+        document.getElementById('gallery-prev')?.addEventListener('click', (e) => { e.stopPropagation(); setImage(current - 1); });
+        document.getElementById('gallery-next')?.addEventListener('click', (e) => { e.stopPropagation(); setImage(current + 1); });
+        thumbs.forEach(t => t.addEventListener('click', () => setImage(parseInt(t.getAttribute('data-index')))));
+
+        // Lightbox Expansion triggers
+        document.getElementById('gallery-main-wrapper')?.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            if (lightbox && lightboxImg) {
+                lightboxImg.src = images[current];
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+
+        const closeLightbox = () => {
+            lightbox?.classList.remove('open');
+            document.body.style.overflow = '';
+        };
+
+        lightboxClose?.addEventListener('click', closeLightbox);
+        lightbox?.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxPrev?.addEventListener('click', () => setImage(current - 1));
+        lightboxNext?.addEventListener('click', () => setImage(current + 1));
+
+        // Swipe Gesture support
+        let startX = 0;
+        const mainWrap = document.getElementById('gallery-main-wrapper');
+        mainWrap?.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+        mainWrap?.addEventListener('touchend', (e) => {
+            const diff = startX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                setImage(diff > 0 ? current + 1 : current - 1);
+            }
+        }, { passive: true });
+
+        // Key listeners for accessible lightbox navigation
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox?.classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') setImage(current - 1);
+            if (e.key === 'ArrowRight') setImage(current + 1);
+        });
     },
 
     // Bind Favorite button events in lists
@@ -1857,7 +2277,10 @@ const UI = {
             price: 60000000,
             bhk: 'All',
             furnishing: 'All',
-            status: 'All'
+            status: 'All',
+            areaMin: 0,
+            areaMax: 999999,
+            amenities: []
         };
         
         // Reset inputs values in UI
@@ -1895,9 +2318,274 @@ const UI = {
         const selectStatus = document.getElementById('filter-status-select');
         if (selectStatus) selectStatus.value = 'All';
 
+        // Reset new filters (Area + Amenities)
+        const areaMinInput = document.getElementById('filter-area-min');
+        const areaMaxInput = document.getElementById('filter-area-max');
+        if (areaMinInput) areaMinInput.value = '';
+        if (areaMaxInput) areaMaxInput.value = '';
+
+        document.querySelectorAll('.amenity-filter-cb').forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Mirror to drawer if open
+        const drawerAreaMin = document.querySelector('#mobile-filter-drawer #filter-area-min');
+        const drawerAreaMax = document.querySelector('#mobile-filter-drawer #filter-area-max');
+        if (drawerAreaMin) drawerAreaMin.value = '';
+        if (drawerAreaMax) drawerAreaMax.value = '';
+        document.querySelectorAll('#mobile-filter-drawer .amenity-filter-cb').forEach(cb => {
+            cb.checked = false;
+        });
+
         // Re-render
         this.hideMapPopover();
+        this.renderFilterChips();
         this.renderListings();
+    },
+
+    // Render interactive filter chips based on currently applied criteria
+    renderFilterChips() {
+        const chipsContainer = document.getElementById('filter-chips-row');
+        if (!chipsContainer) return;
+
+        const chips = [];
+
+        // Purpose
+        if (state.filters.purpose && state.filters.purpose !== 'buy') {
+            chips.push({ label: `Purpose: ${state.filters.purpose.toUpperCase()}`, key: 'purpose', val: 'buy' });
+        }
+        // Location
+        if (state.filters.location) {
+            chips.push({ label: `Loc: ${state.filters.location}`, key: 'location', val: '' });
+        }
+        // Type
+        if (state.filters.type && state.filters.type !== 'All') {
+            chips.push({ label: `Type: ${state.filters.type}`, key: 'type', val: 'All' });
+        }
+        // BHK
+        if (state.filters.bhk && state.filters.bhk !== 'All') {
+            chips.push({ label: `${state.filters.bhk} BHK`, key: 'bhk', val: 'All' });
+        }
+        // Price Max (if below 6 Cr)
+        if (state.filters.price && state.filters.price < 60000000) {
+            const formattedPrice = state.filters.price >= 10000000 ? 
+                `₹${(state.filters.price / 10000000).toFixed(1)} Cr` : 
+                `₹${(state.filters.price / 100000).toFixed(0)} L`;
+            chips.push({ label: `Max: ${formattedPrice}`, key: 'price', val: 60000000 });
+        }
+        // Area Min/Max
+        if (state.filters.areaMin > 0) {
+            chips.push({ label: `Min Area: ${state.filters.areaMin} sqft`, key: 'areaMin', val: 0 });
+        }
+        if (state.filters.areaMax < 999999) {
+            chips.push({ label: `Max Area: ${state.filters.areaMax} sqft`, key: 'areaMax', val: 999999 });
+        }
+        // Amenities
+        if (state.filters.amenities && state.filters.amenities.length > 0) {
+            state.filters.amenities.forEach(amenity => {
+                chips.push({ label: amenity, key: 'amenity', val: amenity });
+            });
+        }
+
+        if (chips.length === 0) {
+            chipsContainer.innerHTML = '';
+            return;
+        }
+
+        chipsContainer.innerHTML = chips.map(chip => `
+            <div class="filter-chip" onclick="UI.removeFilter('${chip.key}', '${chip.val}')">
+                <span>${chip.label}</span>
+                <span class="filter-chip-x">&times;</span>
+            </div>
+        `).join('') + `<button onclick="UI.resetFilters()" style="background:transparent; border:none; color:var(--text-muted); font-size:0.75rem; font-weight:700; cursor:pointer; padding:6px 10px;">Clear All</button>`;
+    },
+
+    // Remove single filter chip and update UI
+    removeFilter(key, resetVal) {
+        if (key === 'amenity') {
+            state.filters.amenities = state.filters.amenities.filter(a => a !== resetVal);
+            // Sync checkbox in desktop sidebar
+            document.querySelectorAll(`.amenity-filter-cb[value="${resetVal}"]`).forEach(cb => cb.checked = false);
+        } else {
+            if (key === 'price') {
+                state.filters.price = parseInt(resetVal);
+                const slider = document.getElementById('filter-price-slider');
+                if (slider) {
+                    slider.value = resetVal;
+                    document.getElementById('price-val-label').textContent = '₹6 Cr';
+                }
+            } else if (key === 'areaMin') {
+                state.filters.areaMin = 0;
+                const minIn = document.getElementById('filter-area-min');
+                if (minIn) minIn.value = '';
+            } else if (key === 'areaMax') {
+                state.filters.areaMax = 999999;
+                const maxIn = document.getElementById('filter-area-max');
+                if (maxIn) maxIn.value = '';
+            } else if (key === 'location') {
+                state.filters.location = '';
+                const locIn = document.getElementById('filter-loc-input');
+                if (locIn) locIn.value = '';
+            } else if (key === 'type') {
+                state.filters.type = 'All';
+                document.querySelectorAll('.type-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-val') === 'All'));
+            } else if (key === 'bhk') {
+                state.filters.bhk = 'All';
+                document.querySelectorAll('.bhk-pill').forEach(p => p.classList.toggle('active', p.getAttribute('data-val') === 'All'));
+            } else {
+                state.filters[key] = resetVal;
+            }
+        }
+
+        // Re-render
+        this.renderFilterChips();
+        this.hideMapPopover();
+        this.renderListings();
+    },
+
+    // Grid / List Layout toggling action
+    toggleResultsView(mode) {
+        const listingsGrid = document.getElementById('listings-results-grid');
+        if (!listingsGrid) return;
+
+        if (mode === 'list') {
+            document.getElementById('btn-view-list')?.classList.add('active');
+            document.getElementById('btn-view-grid')?.classList.remove('active');
+            state.viewMode = 'list';
+        } else {
+            document.getElementById('btn-view-grid')?.classList.add('active');
+            document.getElementById('btn-view-list')?.classList.remove('active');
+            state.viewMode = 'grid';
+        }
+        this.renderListings();
+    },
+
+    // Save active state filters configuration (simulated db snapshot)
+    saveCurrentSearch() {
+        if (!state.session.isLoggedIn) {
+            state.showNotification("Save Search", "Please sign in to save searches to your profile.");
+            return;
+        }
+
+        const criteriaLabel = [];
+        if (state.filters.location) criteriaLabel.push(state.filters.location);
+        if (state.filters.type !== 'All') criteriaLabel.push(state.filters.type);
+        if (state.filters.bhk !== 'All') criteriaLabel.push(`${state.filters.bhk} BHK`);
+        if (state.filters.areaMin > 0 || state.filters.areaMax < 999999) criteriaLabel.push(`Area Specified`);
+
+        const summary = criteriaLabel.length > 0 ? criteriaLabel.join(' • ') : "All Listings Search";
+        const querySnapshot = {
+            id: Date.now(),
+            label: summary,
+            filters: { ...state.filters },
+            timestamp: new Date().toLocaleDateString('en-IN', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        state.recentSearches.push(querySnapshot);
+        state.showNotification("Search Bookmarked!", "Saved to your dashboard directory.");
+    },
+
+    // Mobile filter off-canvas drawer controllers
+    initMobileFilterDrawer() {
+        const overlay = document.getElementById('mobile-filter-overlay');
+        const drawer = document.getElementById('mobile-filter-drawer');
+        const desktopPanel = document.getElementById('filters-panel-desktop');
+        const drawerBody = document.getElementById('mobile-drawer-body');
+
+        if (!drawer || !desktopPanel || !drawerBody) return;
+
+        // Clone desktop filter nodes into mobile drawer body
+        drawerBody.innerHTML = desktopPanel.innerHTML;
+        drawerBody.querySelectorAll('#btn-reset-filters').forEach(b => b.remove()); // Remove duplicate reset button
+        
+        // Align active values inside mobile drawer
+        this.syncDrawerFilters();
+    },
+
+    syncDrawerFilters() {
+        const drawer = document.getElementById('mobile-filter-drawer');
+        if (!drawer) return;
+
+        // Sync values from state to drawer inputs
+        const minIn = drawer.querySelector('#filter-area-min');
+        const maxIn = drawer.querySelector('#filter-area-max');
+        if (minIn) minIn.value = state.filters.areaMin > 0 ? state.filters.areaMin : '';
+        if (maxIn) maxIn.value = state.filters.areaMax < 999999 ? state.filters.areaMax : '';
+
+        // Sync checkboxes
+        drawer.querySelectorAll('.amenity-filter-cb').forEach(cb => {
+            cb.checked = state.filters.amenities.includes(cb.value);
+        });
+
+        // Sync selects
+        const furnishing = drawer.querySelector('#filter-furnishing-select');
+        if (furnishing) furnishing.value = state.filters.furnishing;
+        const status = drawer.querySelector('#filter-status-select');
+        if (status) status.value = state.filters.status;
+    },
+
+    openMobileFilterDrawer() {
+        const overlay = document.getElementById('mobile-filter-overlay');
+        const drawer = document.getElementById('mobile-filter-drawer');
+        if (overlay && drawer) {
+            overlay.classList.add('open');
+            drawer.classList.add('open');
+            this.syncDrawerFilters();
+        }
+    },
+
+    closeMobileFilterDrawer() {
+        const overlay = document.getElementById('mobile-filter-overlay');
+        const drawer = document.getElementById('mobile-filter-drawer');
+        if (overlay && drawer) {
+            overlay.classList.remove('open');
+            drawer.classList.remove('open');
+        }
+    },
+
+    applyMobileFilters() {
+        const drawer = document.getElementById('mobile-filter-drawer');
+        if (!drawer) return;
+
+        // Extract values from drawer inputs back to state
+        const minIn = drawer.querySelector('#filter-area-min');
+        const maxIn = drawer.querySelector('#filter-area-max');
+        state.filters.areaMin = minIn && minIn.value ? parseInt(minIn.value) : 0;
+        state.filters.areaMax = maxIn && maxIn.value ? parseInt(maxIn.value) : 999999;
+
+        // Sync amenities checkboxes
+        const selectedAmenities = [];
+        drawer.querySelectorAll('.amenity-filter-cb:checked').forEach(cb => {
+            selectedAmenities.push(cb.value);
+        });
+        state.filters.amenities = selectedAmenities;
+
+        // Sync selects
+        const furnishing = drawer.querySelector('#filter-furnishing-select');
+        if (furnishing) state.filters.furnishing = furnishing.value;
+        const status = drawer.querySelector('#filter-status-select');
+        if (status) state.filters.status = status.value;
+
+        // Sync to desktop sidebar inputs
+        const dMin = document.getElementById('filter-area-min');
+        const dMax = document.getElementById('filter-area-max');
+        if (dMin) dMin.value = state.filters.areaMin > 0 ? state.filters.areaMin : '';
+        if (dMax) dMax.value = state.filters.areaMax < 999999 ? state.filters.areaMax : '';
+
+        document.querySelectorAll('.amenity-filter-cb').forEach(cb => {
+            cb.checked = state.filters.amenities.includes(cb.value);
+        });
+
+        const dFurnishing = document.getElementById('filter-furnishing-select');
+        if (dFurnishing) dFurnishing.value = state.filters.furnishing;
+        const dStatus = document.getElementById('filter-status-select');
+        if (dStatus) dStatus.value = state.filters.status;
+
+        // Render updates
+        this.renderFilterChips();
+        this.hideMapPopover();
+        this.renderListings();
+        this.closeMobileFilterDrawer();
     },
 
     // Dynamic Header Auth State update
@@ -3645,6 +4333,80 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.renderListings();
         });
     }
+
+    // C9. Area Range Filters (NEW)
+    const areaMinEl = document.getElementById('filter-area-min');
+    const areaMaxEl = document.getElementById('filter-area-max');
+    const handleAreaFilter = () => {
+        state.filters.areaMin = areaMinEl && areaMinEl.value ? parseInt(areaMinEl.value) : 0;
+        state.filters.areaMax = areaMaxEl && areaMaxEl.value ? parseInt(areaMaxEl.value) : 999999;
+        UI.renderFilterChips();
+        UI.hideMapPopover();
+        UI.renderListings();
+    };
+    if (areaMinEl) areaMinEl.addEventListener('input', handleAreaFilter);
+    if (areaMaxEl) areaMaxEl.addEventListener('input', handleAreaFilter);
+
+    // C10. Amenities Filter Checkboxes (NEW)
+    const setupAmenitiesListener = () => {
+        document.querySelectorAll('.amenity-filter-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checked = [];
+                // Query only current visible checkboxes (sidebar or drawer depending on where click happened)
+                const scope = cb.closest('#mobile-filter-drawer') ? '#mobile-filter-drawer' : '#filters-panel-desktop';
+                document.querySelectorAll(`${scope} .amenity-filter-cb:checked`).forEach(c => {
+                    checked.push(c.value);
+                });
+                state.filters.amenities = checked;
+                
+                // Sync value to opposite layout element (desktop to drawer or vice versa)
+                const oppositeScope = scope === '#mobile-filter-drawer' ? '#filters-panel-desktop' : '#mobile-filter-drawer';
+                document.querySelectorAll(`${oppositeScope} .amenity-filter-cb`).forEach(otherCb => {
+                    otherCb.checked = checked.includes(otherCb.value);
+                });
+
+                UI.renderFilterChips();
+                UI.hideMapPopover();
+                UI.renderListings();
+            });
+        });
+    };
+    setupAmenitiesListener();
+
+    // C11. View Grid/List togglers (NEW)
+    document.getElementById('btn-view-grid')?.addEventListener('click', () => {
+        UI.toggleResultsView('grid');
+    });
+    document.getElementById('btn-view-list')?.addEventListener('click', () => {
+        UI.toggleResultsView('list');
+    });
+
+    // C12. Save search trigger (NEW)
+    document.getElementById('btn-save-search')?.addEventListener('click', () => {
+        UI.saveCurrentSearch();
+    });
+
+    // C13. Mobile Drawer Controls (NEW)
+    document.getElementById('btn-mobile-filter-open')?.addEventListener('click', () => {
+        UI.openMobileFilterDrawer();
+    });
+    document.getElementById('btn-mobile-filter-close')?.addEventListener('click', () => {
+        UI.closeMobileFilterDrawer();
+    });
+    document.getElementById('mobile-filter-overlay')?.addEventListener('click', () => {
+        UI.closeMobileFilterDrawer();
+    });
+    document.getElementById('btn-drawer-apply')?.addEventListener('click', () => {
+        UI.applyMobileFilters();
+    });
+    document.getElementById('btn-drawer-reset')?.addEventListener('click', () => {
+        UI.resetFilters();
+        UI.closeMobileFilterDrawer();
+    });
+
+    // Initialize Mobile Filter Drawer contents & Chips display on load
+    UI.initMobileFilterDrawer();
+    UI.renderFilterChips();
 
     // D. Map Close Popover card click
     const mapPopClose = document.getElementById('map-popover-close-btn');
