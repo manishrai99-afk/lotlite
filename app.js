@@ -2357,7 +2357,9 @@ const UI = {
                     chatMessagesContainer.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">No messages yet. Send a message to start conversation.</div>`;
                 } else {
                     chatMessagesContainer.innerHTML = msgs.map(m => {
-                        const isMe = m.sender === 'Me' || m.sender === state.session.currentUser.avatar;
+                        // A message is "mine" if sender matches current user's avatar initials
+                        const currentAvatar = state.session.currentUser ? state.session.currentUser.avatar : null;
+                        const isMe = currentAvatar && m.sender === currentAvatar;
                         const bubbleClass = isMe ? 'bubble-me' : 'bubble-them';
                         return `
                             <div class="chat-bubble ${bubbleClass}">
@@ -3238,20 +3240,40 @@ const UI = {
         const activePanel = document.querySelector('.dashboard-panel.active');
         if (!activePanel) return;
 
+        // Filter table rows (leads, visits, followups)
         const rows = activePanel.querySelectorAll('tbody tr');
         if (rows.length > 0) {
             rows.forEach(row => {
-                if (row.cells.length === 1 && row.cells[0].textContent.includes('No')) return;
+                if (row.cells.length === 1 && row.cells[0].textContent.includes('No')) return; // Skip empty-state rows
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(query) ? '' : 'none';
             });
         }
 
+        // Filter property cards (saved, listings)
         const cards = activePanel.querySelectorAll('.cards-grid .property-card');
         if (cards.length > 0) {
             cards.forEach(card => {
                 const text = card.textContent.toLowerCase();
                 card.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Filter activity feed items (overview)
+        const activityItems = activePanel.querySelectorAll('.activity-item');
+        if (activityItems.length > 0) {
+            activityItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Filter alert items (alerts panel)
+        const alertItems = activePanel.querySelectorAll('.alert-item, .followup-item');
+        if (alertItems.length > 0) {
+            alertItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? '' : 'none';
             });
         }
     },
@@ -3695,10 +3717,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 age,
                 amenities: amenities.length > 0 ? amenities : ["Power Backup", "24/7 Security", "Parking"],
                 agent: {
-                    name: "You (Self-Listed)",
-                    phone: "+91 99999 88888",
-                    email: "owner@lotlite.com",
-                    avatar: "ME"
+                    name: state.session.isLoggedIn ? state.session.currentUser.name : 'Self-Listed',
+                    phone: state.session.isLoggedIn ? state.session.currentUser.phone : '+91 99999 88888',
+                    email: state.session.isLoggedIn ? state.session.currentUser.email : 'unknown@lotlite.com',
+                    avatar: state.session.isLoggedIn ? state.session.currentUser.avatar : 'ME'
                 },
                 description: desc || "No description provided by the owner. Contact directly for full specification and visit details.",
                 mapX,
