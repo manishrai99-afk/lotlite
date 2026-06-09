@@ -841,6 +841,62 @@ const SEED_PROPERTIES = [
     }
 ]
 
+// =============================================
+// PROGRAMMATIC IMAGE ENRICHMENT FOR SEED DATA (Minimum 5 distinct Indian Flat/Interior images per property)
+// =============================================
+const INDIAN_FLAT_IMAGES = [
+    "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1502005229762-fc1b2381f0b5?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600607687399-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600607687644-c7171b42498f?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600573472956-6f777353f86e?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1617806118233-18e1db207f62?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1618219942942-ddb59a3c20a4?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1616047006789-b7af5afb8c20?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1615876234886-fd9a39fda97f?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1618221381711-42ca8ab6e908?auto=format&fit=crop&w=800&q=80"
+];
+
+SEED_PROPERTIES.forEach((prop, index) => {
+    const startIdx = (index * 5) % INDIAN_FLAT_IMAGES.length;
+    const propImages = [];
+    for (let i = 0; i < 5; i++) {
+        propImages.push(INDIAN_FLAT_IMAGES[(startIdx + i) % INDIAN_FLAT_IMAGES.length]);
+    }
+    prop.images = propImages;
+    prop.image = propImages[0];
+});
+
 // 2. STATE MANAGER
 class AppState {
     constructor() {
@@ -891,6 +947,17 @@ class AppState {
         const savedProps = localStorage.getItem('lotlite_user_properties');
         if (savedProps) {
             const userProps = JSON.parse(savedProps);
+            userProps.forEach((prop, index) => {
+                if (!prop.images || prop.images.length === 0) {
+                    const startIdx = (index * 7) % INDIAN_FLAT_IMAGES.length;
+                    const propImages = [];
+                    for (let i = 0; i < 5; i++) {
+                        propImages.push(INDIAN_FLAT_IMAGES[(startIdx + i) % INDIAN_FLAT_IMAGES.length]);
+                    }
+                    prop.images = propImages;
+                    prop.image = propImages[0];
+                }
+            });
             this.properties = [...this.properties, ...userProps];
         }
 
@@ -1664,7 +1731,7 @@ const UI = {
         const RERA_num = `RERA-MH-2026-${Math.abs(prop.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0))}`;
 
         // Dynamic multi-image gallery setup
-        const galleryImages = [
+        const galleryImages = prop.images && prop.images.length > 0 ? prop.images : [
             prop.image,
             "assets/prop_1.jpg",
             "assets/prop_2.jpg",
@@ -4442,10 +4509,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 amenities.push(cb.value);
             });
 
-            // Assign mock image based on type
-            let image = "assets/prop_1.jpg";
-            if (type === 'Villa') image = "assets/prop_2.jpg";
-            if (type === 'Commercial') image = "assets/prop_3.jpg";
+            // Assign high-quality Indian Flat images
+            const randomOffset = Math.floor(Math.random() * INDIAN_FLAT_IMAGES.length);
+            const propImages = [];
+            for (let i = 0; i < 5; i++) {
+                propImages.push(INDIAN_FLAT_IMAGES[(randomOffset + i) % INDIAN_FLAT_IMAGES.length]);
+            }
+            const image = propImages[0];
             
             // Random map coordinates so it appears on map
             const mapX = Math.floor(Math.random() * 40) + 30; // 30% - 70% range
@@ -4473,6 +4543,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 baths,
                 area,
                 image,
+                images: propImages,
                 featured: false,
                 furnishing,
                 constructionStatus: status,
