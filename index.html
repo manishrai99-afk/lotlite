@@ -1169,51 +1169,35 @@
                             <!-- Panel 7: Site Visits (Visit Requests) -->
                             <div class="dashboard-panel" id="panel-visits">
                                 <!-- Upcoming Visits -->
-                                <div class="dashboard-table-card glass-panel" style="width:100%; margin-bottom:30px;">
-                                    <div class="table-card-header">
+                                <div class="dashboard-table-card glass-panel" style="width:100%; margin-bottom:30px; padding:24px;">
+                                    <div class="table-card-header" style="margin-bottom:20px;">
                                         <h3 id="visits-panel-hdr-title">Upcoming Site Visits</h3>
-                                        <p id="visits-panel-hdr-subtitle">Track pending and confirmed visit schedules
-                                        </p>
+                                        <p id="visits-panel-hdr-subtitle">Track pending and confirmed visit schedules</p>
                                     </div>
-                                    <div class="dashboard-table-responsive">
-                                        <table class="dashboard-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Client / Visitor</th>
-                                                    <th>Property Address</th>
-                                                    <th>Scheduled Date & Time</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="panel-upcoming-visits-tbody">
-                                                <!-- Injected upcoming visits -->
-                                            </tbody>
-                                        </table>
+                                    <div class="visit-cards-grid" id="panel-upcoming-visits-grid">
+                                        <!-- Injected upcoming visits cards -->
                                     </div>
                                 </div>
 
-                                <!-- Past & Completed Visits -->
-                                <div class="dashboard-table-card glass-panel" style="width:100%;">
-                                    <div class="table-card-header">
-                                        <h3>Past & Completed Visits</h3>
+                                <!-- Past Visits -->
+                                <div class="dashboard-table-card glass-panel" style="width:100%; margin-bottom:30px; padding:24px;">
+                                    <div class="table-card-header" style="margin-bottom:20px;">
+                                        <h3>Past Visits</h3>
                                         <p>Review history of completed or closed visits</p>
                                     </div>
-                                    <div class="dashboard-table-responsive">
-                                        <table class="dashboard-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Client / Visitor</th>
-                                                    <th>Property Address</th>
-                                                    <th>Scheduled Date & Time</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="panel-completed-visits-tbody">
-                                                <!-- Injected completed/past visits -->
-                                            </tbody>
-                                        </table>
+                                    <div class="visit-cards-grid" id="panel-past-visits-grid">
+                                        <!-- Injected completed/past visits cards -->
+                                    </div>
+                                </div>
+
+                                <!-- Cancelled Visits -->
+                                <div class="dashboard-table-card glass-panel" style="width:100%; padding:24px;">
+                                    <div class="table-card-header" style="margin-bottom:20px;">
+                                        <h3>Cancelled Visits</h3>
+                                        <p>Review cancelled or declined visits</p>
+                                    </div>
+                                    <div class="visit-cards-grid" id="panel-cancelled-visits-grid">
+                                        <!-- Injected cancelled visits cards -->
                                     </div>
                                 </div>
                             </div>
@@ -1428,6 +1412,52 @@
             </div>
         </footer>
 
+    </div>
+
+    <!-- Site Visit Booking Modal -->
+    <div class="booking-modal-overlay" id="booking-modal-overlay" role="dialog" aria-modal="true" aria-label="Book Site Visit">
+        <div class="booking-modal-card">
+            <button class="booking-modal-close" id="booking-modal-close-btn" aria-label="Close Modal">&times;</button>
+            <h3 class="modal-title" id="booking-modal-title">Schedule Site Visit</h3>
+            <p class="modal-subtitle" id="booking-modal-subtitle">Book a physical visit to inspect the property</p>
+            
+            <form id="booking-modal-form" style="margin-top: 20px;">
+                <input type="hidden" id="booking-prop-id">
+                <input type="hidden" id="booking-reschedule-id">
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="booking-name" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Full Name</label>
+                    <input type="text" id="booking-name" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="booking-phone" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Mobile Number</label>
+                    <input type="tel" id="booking-phone" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="booking-email" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Email Address</label>
+                    <input type="email" id="booking-email" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="booking-date" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Visit Date</label>
+                    <input type="date" id="booking-date" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label for="booking-slot" style="display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Preferred Time Slot</label>
+                    <select id="booking-slot" required style="width: 100%; border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem;">
+                        <option value="10 AM – 12 PM">10 AM – 12 PM</option>
+                        <option value="12 PM – 2 PM">12 PM – 2 PM</option>
+                        <option value="2 PM – 4 PM">2 PM – 4 PM</option>
+                        <option value="4 PM – 6 PM">4 PM – 6 PM</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="booking-submit-btn" style="width: 100%; padding: 12px; font-weight: 700; font-size: 0.95rem; border-radius: var(--radius-md);">Confirm Site Visit</button>
+            </form>
+        </div>
     </div>
 
     <!-- Core App Logic -->

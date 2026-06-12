@@ -984,7 +984,7 @@ class AppState {
         }
 
         // Load site visits or seed defaults
-        const savedVisits = localStorage.getItem('lotlite_site_visits_db');
+        const savedVisits = localStorage.getItem('lotlite_visit_bookings');
         if (savedVisits) {
             this.siteVisits = JSON.parse(savedVisits);
         } else {
@@ -1116,42 +1116,50 @@ class AppState {
         this.siteVisits = [
             {
                 id: "visit-1",
-                name: "Preeti Patel",
-                propertyAddress: "Sohna Road, Gurgaon",
                 propertyId: "prop-2",
-                time: "2026-06-10 11:00 AM",
-                status: "Confirmed",
-                agentEmail: "neha@lotlite.com"
+                propertyTitle: "Whispering Pines Luxury Villa",
+                customerName: "Preeti Patel",
+                email: "preeti@patel.com",
+                phone: "+91 98765 43212",
+                date: "2026-06-10",
+                slot: "10 AM – 12 PM",
+                status: "Confirmed"
             },
             {
                 id: "visit-2",
-                name: "Rajiv Shah",
-                propertyAddress: "Sector 62, Noida",
                 propertyId: "prop-1",
-                time: "2026-06-12 04:00 PM",
-                status: "Pending",
-                agentEmail: "rajesh@lotlite.com"
+                propertyTitle: "Skyline Oasis Apartments",
+                customerName: "Rajiv Shah",
+                email: "rajiv@shah.com",
+                phone: "+91 98765 43211",
+                date: "2026-06-12",
+                slot: "4 PM – 6 PM",
+                status: "Pending"
             },
             {
                 id: "visit-3",
-                name: "Vikram Malhotra",
-                propertyAddress: "Koregaon Park, Pune",
                 propertyId: "prop-pune-4",
-                time: "2026-06-08 02:00 PM",
-                status: "Completed",
-                agentEmail: "agent@lotlite.com"
+                propertyTitle: "Elite Greens Penthouse",
+                customerName: "Vikram Malhotra",
+                email: "buyer@lotlite.com",
+                phone: "+91 98111 22266",
+                date: "2026-06-08",
+                slot: "2 PM – 4 PM",
+                status: "Completed"
             },
             {
                 id: "visit-4",
-                name: "Devendra Joshi",
-                propertyAddress: "Hinjawadi, Pune",
                 propertyId: "prop-pune-1",
-                time: "2026-06-07 10:00 AM",
-                status: "Confirmed",
-                agentEmail: "agent@lotlite.com"
+                propertyTitle: "Epitome Prime Office Space",
+                customerName: "Devendra Joshi",
+                email: "devendra@joshi.com",
+                phone: "+91 98765 43214",
+                date: "2026-06-07",
+                slot: "10 AM – 12 PM",
+                status: "Confirmed"
             }
         ];
-        localStorage.setItem('lotlite_site_visits_db', JSON.stringify(this.siteVisits));
+        localStorage.setItem('lotlite_visit_bookings', JSON.stringify(this.siteVisits));
     }
 
     seedChats() {
@@ -1460,7 +1468,8 @@ const UI = {
                             <div class="list-card-price" style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: var(--primary);">${prop.priceDisplay}</div>
                             <div class="list-card-price-meta">Est. ₹${Math.round(prop.price / prop.area).toLocaleString('en-IN')}/sqft</div>
                         </div>
-                        <button class="list-card-view-btn" onclick="UI.navigateToProperty('${prop.id}')" style="width: 100%; font-weight: 600; padding: 8px 14px;">View Details</button>
+                        <button class="list-card-view-btn" onclick="UI.navigateToProperty('${prop.id}')" style="width: 100%; font-weight: 600; padding: 8px 14px; margin-bottom: 8px;">View Details</button>
+                        <button class="list-card-view-btn btn-accent" onclick="event.stopPropagation(); UI.openBookingModal('${prop.id}')" style="width: 100%; font-weight: 600; padding: 8px 14px; background: var(--accent); color: white; border: none;">Schedule Site Visit</button>
                     </div>
                 </div>
             `;
@@ -1516,6 +1525,7 @@ const UI = {
                         </div>
                         <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="UI.navigateToProperty('${prop.id}')">View</button>
                     </div>
+                    <button class="btn-accent" style="width: 100%; font-size: 0.8rem; padding: 8px; margin-top: 10px; border: none; background: var(--accent); color: white; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;" onclick="event.stopPropagation(); UI.openBookingModal('${prop.id}')">Schedule Site Visit</button>
                 </div>
             </div>
         `;
@@ -2088,7 +2098,7 @@ const UI = {
                                     <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
                                     Contact Agent
                                 </button>
-                                <button class="btn-contact-secondary" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; transition: all var(--transition-fast);" onclick="state.showNotification('Visit Scheduled', 'Site visit request registered! Confirmation will be sent via SMS.')">
+                                <button class="btn-contact-secondary" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.88rem; transition: all var(--transition-fast);" onclick="UI.openBookingModal('${prop.id}')">
                                     <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>
                                     Schedule Site Visit
                                 </button>
@@ -2101,7 +2111,7 @@ const UI = {
 
             <!-- Mobile CTA Bar (Fixed to bottom for responsive screens) -->
             <div class="detail-mobile-cta" id="detail-mobile-cta" style="position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-secondary); border-top: 1px solid var(--border-color); padding: 12px 20px; display: none; gap: 10px; z-index: 200; box-shadow: 0 -6px 20px rgba(0,0,0,0.08);">
-                <button class="btn-contact-secondary" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.82rem;" onclick="state.showNotification('Visit Scheduled', 'Site visit request registered! Confirmation will be sent via SMS.')">
+                <button class="btn-contact-secondary" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary); border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.82rem;" onclick="UI.openBookingModal('${prop.id}')">
                     <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>
                     Schedule Visit
                 </button>
@@ -2954,73 +2964,241 @@ const UI = {
     renderVisits() {
         const user = state.session.currentUser;
         if (!user) return;
-        
-        const upcomingTbody = document.getElementById('panel-upcoming-visits-tbody');
-        const completedTbody = document.getElementById('panel-completed-visits-tbody');
-        
-        if (!upcomingTbody && !completedTbody) return;
 
-        const isBuyer = user.role === 'Buyer';
-        const email = user.email.toLowerCase();
+        const upcomingGrid = document.getElementById('panel-upcoming-visits-grid');
+        const pastGrid = document.getElementById('panel-past-visits-grid');
+        const cancelledGrid = document.getElementById('panel-cancelled-visits-grid');
 
-        const allVisits = isBuyer 
-            ? state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase())
-            : state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+        if (!upcomingGrid || !pastGrid || !cancelledGrid) return;
 
-        // Upcoming visits: Pending or Confirmed status
-        const upcomingVisits = allVisits.filter(v => 
-            v.status.toLowerCase() === 'pending' || v.status.toLowerCase() === 'confirmed'
-        );
-
-        // Completed / Past visits: Completed, Closed, Cancelled, Declined status
-        const completedVisits = allVisits.filter(v => 
-            v.status.toLowerCase() === 'completed' || v.status.toLowerCase() === 'closed' || v.status.toLowerCase() === 'cancelled' || v.status.toLowerCase() === 'declined'
-        );
-
-        // Render upcoming
-        if (upcomingTbody) {
-            if (upcomingVisits.length === 0) {
-                upcomingTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No upcoming site visits scheduled.</td></tr>`;
+        const userEmail = user.email.toLowerCase();
+        const filteredVisits = state.siteVisits.filter(v => {
+            if (user.role === 'Buyer') {
+                return v.email.toLowerCase() === userEmail;
             } else {
-                upcomingTbody.innerHTML = upcomingVisits.map(v => {
-                    let actionButtons = '';
-                    if (!isBuyer) {
+                const prop = state.properties.find(p => p.id === v.propertyId);
+                if (prop && prop.agent && prop.agent.email) {
+                    return prop.agent.email.toLowerCase() === userEmail;
+                }
+                return v.agentEmail && v.agentEmail.toLowerCase() === userEmail;
+            }
+        });
+
+        const upcomingVisits = filteredVisits.filter(v => v.status === 'Pending' || v.status === 'Confirmed');
+        const pastVisits = filteredVisits.filter(v => v.status === 'Completed');
+        const cancelledVisits = filteredVisits.filter(v => v.status === 'Cancelled' || v.status === 'Closed' || v.status === 'Declined');
+
+        const renderGrid = (gridEl, list) => {
+            if (list.length === 0) {
+                gridEl.innerHTML = `
+                    <div class="search-empty-state" style="grid-column: 1 / -1; padding: 30px 20px; text-align: center;">
+                        <svg viewBox="0 0 24 24" style="width: 48px; height: 48px; fill: var(--text-muted); opacity: 0.5; margin-bottom: 12px;"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                        <h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 4px;">No Visits Found</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">No site visits scheduled in this category.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            gridEl.innerHTML = list.map(v => {
+                const prop = state.properties.find(p => p.id === v.propertyId);
+                const title = prop ? prop.title : v.propertyTitle;
+                const location = prop ? prop.location : "Location not available";
+
+                const dateStr = new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                let actionButtons = '';
+                if (v.status === 'Pending' || v.status === 'Confirmed') {
+                    if (user.role === 'Buyer') {
                         actionButtons = `
-                            <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.approveVisit('${v.id}')">Approve</button>
-                            <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.cancelVisit('${v.id}')">Decline</button>
+                            <div class="visit-card-actions">
+                                <button class="btn-secondary" style="border-color: var(--danger); color: var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel</button>
+                                <button class="btn-primary" onclick="UI.openBookingModal('${v.propertyId}', '${v.id}')">Reschedule</button>
+                            </div>
                         `;
                     } else {
-                        actionButtons = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--danger); color:var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel Request</button>`;
+                        let confirmBtn = '';
+                        if (v.status === 'Pending') {
+                            confirmBtn = `<button class="btn-primary" style="background: var(--success); border-color: var(--success);" onclick="UI.approveVisit('${v.id}')">Confirm</button>`;
+                        }
+                        actionButtons = `
+                            <div class="visit-card-actions">
+                                ${confirmBtn}
+                                <button class="btn-secondary" style="border-color: var(--danger); color: var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel</button>
+                                <button class="btn-primary" onclick="UI.openBookingModal('${v.propertyId}', '${v.id}')">Reschedule</button>
+                            </div>
+                        `;
                     }
+                }
 
-                    return `
-                        <tr>
-                            <td><strong>${v.name}</strong></td>
-                            <td>${v.propertyAddress}</td>
-                            <td>${v.time}</td>
-                            <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
-                            <td>${actionButtons}</td>
-                        </tr>
+                let customerInfo = '';
+                if (user.role !== 'Buyer') {
+                    customerInfo = `
+                        <div class="visit-card-customer">
+                            <strong>Visitor:</strong> ${v.customerName}<br>
+                            <strong>Phone:</strong> ${v.phone}<br>
+                            <strong>Email:</strong> ${v.email}
+                        </div>
                     `;
-                }).join('');
-            }
+                } else if (prop && prop.agent) {
+                    customerInfo = `
+                        <div class="visit-card-customer">
+                            <strong>Agent:</strong> ${prop.agent.name}<br>
+                            <strong>Phone:</strong> ${prop.agent.phone}<br>
+                            <strong>Email:</strong> ${prop.agent.email}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="visit-details-card">
+                        <div class="visit-card-header">
+                            <div>
+                                <h4 class="visit-card-title" onclick="UI.navigateToProperty('${v.propertyId}')">${title}</h4>
+                                <div class="visit-card-locality">
+                                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                    <span>${location}</span>
+                                </div>
+                            </div>
+                            <span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span>
+                        </div>
+                        <div class="visit-card-schedule">
+                            <div class="visit-card-date">
+                                <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                                <span>${dateStr}</span>
+                            </div>
+                            <div class="visit-card-slot">
+                                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                                <span>${v.slot}</span>
+                            </div>
+                        </div>
+                        ${customerInfo}
+                        ${actionButtons}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        renderGrid(upcomingGrid, upcomingVisits);
+        renderGrid(pastGrid, pastVisits);
+        renderGrid(cancelledGrid, cancelledVisits);
+    },
+
+    openBookingModal(propertyId, rescheduleId = '') {
+        if (!state.session.isLoggedIn) {
+            state.showNotification("Login Required", "Please sign in to schedule a site visit.");
+            window.location.hash = '#login';
+            return;
         }
 
-        // Render completed
-        if (completedTbody) {
-            if (completedVisits.length === 0) {
-                completedTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No historical site visits found.</td></tr>`;
-            } else {
-                completedTbody.innerHTML = completedVisits.map(v => `
-                    <tr>
-                        <td><strong>${v.name}</strong></td>
-                        <td>${v.propertyAddress}</td>
-                        <td>${v.time}</td>
-                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
-                        <td><span style="font-size:0.85rem; color:var(--text-muted);">Archived</span></td>
-                    </tr>
-                `).join('');
+        const user = state.session.currentUser;
+        const prop = state.properties.find(p => p.id === propertyId);
+        
+        const overlay = document.getElementById('booking-modal-overlay');
+        const form = document.getElementById('booking-modal-form');
+        const titleEl = document.getElementById('booking-modal-title');
+        const subtitleEl = document.getElementById('booking-modal-subtitle');
+        const propIdInput = document.getElementById('booking-prop-id');
+        const rescheduleIdInput = document.getElementById('booking-reschedule-id');
+        
+        const nameInput = document.getElementById('booking-name');
+        const phoneInput = document.getElementById('booking-phone');
+        const emailInput = document.getElementById('booking-email');
+        const dateInput = document.getElementById('booking-date');
+        const slotInput = document.getElementById('booking-slot');
+
+        if (!overlay || !form) return;
+
+        propIdInput.value = propertyId;
+        rescheduleIdInput.value = rescheduleId;
+
+        if (rescheduleId) {
+            const booking = state.siteVisits.find(v => v.id === rescheduleId);
+            if (booking) {
+                titleEl.textContent = "Reschedule Site Visit";
+                subtitleEl.textContent = `Rescheduling visit for ${booking.propertyTitle}`;
+                nameInput.value = booking.customerName;
+                phoneInput.value = booking.phone;
+                emailInput.value = booking.email;
+                dateInput.value = booking.date;
+                slotInput.value = booking.slot;
             }
+        } else {
+            titleEl.textContent = "Schedule Site Visit";
+            subtitleEl.textContent = `Book a physical visit to inspect ${prop ? prop.title : 'property'}`;
+            nameInput.value = user.name;
+            phoneInput.value = user.phone;
+            emailInput.value = user.email;
+            
+            // Set date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
+            slotInput.value = "10 AM – 12 PM";
+        }
+
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    },
+
+    closeBookingModal() {
+        const overlay = document.getElementById('booking-modal-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+        document.body.style.overflow = '';
+        const form = document.getElementById('booking-modal-form');
+        if (form) form.reset();
+    },
+
+    handleBookingSubmit(e) {
+        e.preventDefault();
+        
+        const propId = document.getElementById('booking-prop-id').value;
+        const rescheduleId = document.getElementById('booking-reschedule-id').value;
+        const name = document.getElementById('booking-name').value;
+        const phone = document.getElementById('booking-phone').value;
+        const email = document.getElementById('booking-email').value;
+        const date = document.getElementById('booking-date').value;
+        const slot = document.getElementById('booking-slot').value;
+
+        const prop = state.properties.find(p => p.id === propId);
+        const propTitle = prop ? prop.title : 'Property';
+
+        if (rescheduleId) {
+            const visit = state.siteVisits.find(v => v.id === rescheduleId);
+            if (visit) {
+                visit.customerName = name;
+                visit.phone = phone;
+                visit.email = email;
+                visit.date = date;
+                visit.slot = slot;
+                visit.status = 'Pending';
+                state.showNotification("Visit Rescheduled", "Your reschedule request has been sent for review.");
+            }
+        } else {
+            const newBooking = {
+                id: 'visit-' + Date.now(),
+                propertyId: propId,
+                propertyTitle: propTitle,
+                customerName: name,
+                email: email,
+                phone: phone,
+                date: date,
+                slot: slot,
+                status: 'Pending'
+            };
+            state.siteVisits.push(newBooking);
+            state.showNotification("Visit Scheduled", "Your site visit request has been submitted successfully.");
+        }
+
+        localStorage.setItem('lotlite_visit_bookings', JSON.stringify(state.siteVisits));
+        this.closeBookingModal();
+        this.renderVisits();
+
+        if (state.session.currentUser) {
+            this.renderOverviewTables(state.session.currentUser);
+            this.renderKPICards(state.session.currentUser);
         }
     },
 
@@ -3196,7 +3374,7 @@ const UI = {
         if (user.role === 'Buyer') {
             const savedCount = state.favorites.length;
             const searchCount = state.recentSearches.length;
-            const visitCount = state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase()).length;
+            const visitCount = state.siteVisits.filter(v => v.email.toLowerCase() === user.email.toLowerCase()).length;
             const contactCount = Object.keys(state.chats).length;
             
             cardsHTML = `
@@ -3242,7 +3420,10 @@ const UI = {
             const totalViews = activeListings * 154; 
             const email = user.email.toLowerCase();
             const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
-            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            const relevantVisits = state.siteVisits.filter(v => {
+                const prop = state.properties.find(p => p.id === v.propertyId);
+                return prop && prop.agent && prop.agent.email.toLowerCase() === email;
+            });
             
             cardsHTML = `
                 <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=listings'" style="cursor:pointer;">
@@ -3286,11 +3467,14 @@ const UI = {
             const activeProps = state.getCurrentUserProperties().length;
             const email = user.email.toLowerCase();
             const relevantLeads = state.leads.filter(l => l.agentEmail.toLowerCase() === email);
-            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            const relevantVisits = state.siteVisits.filter(v => {
+                const prop = state.properties.find(p => p.id === v.propertyId);
+                return prop && prop.agent && prop.agent.email.toLowerCase() === email;
+            });
             
             const closedLeads = relevantLeads.filter(l => l.status === 'Closed' || l.status === 'Interested').length;
             const conversionRate = relevantLeads.length > 0 ? ((closedLeads / relevantLeads.length) * 100).toFixed(1) + '%' : '18.5%';
-
+ 
             cardsHTML = `
                 <div class="dashboard-card glass-panel" onclick="window.location.hash='#dashboard?tab=listings'" style="cursor:pointer;">
                     <div class="card-icon-box" style="color:var(--primary); background:rgba(79, 70, 229, 0.1);">
@@ -3603,17 +3787,22 @@ const UI = {
                     <th>Status</th>
                 </tr>
             `;
-            const myVisits = state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase());
+            const myVisits = state.siteVisits.filter(v => v.email.toLowerCase() === user.email.toLowerCase());
             if (myVisits.length === 0) {
                 t2Tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted);">No visits requested.</td></tr>`;
             } else {
-                t2Tbody.innerHTML = myVisits.map(v => `
-                    <tr>
-                        <td><strong>${v.propertyAddress}</strong></td>
-                        <td>${v.time}</td>
-                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
-                    </tr>
-                `).join('');
+                t2Tbody.innerHTML = myVisits.map(v => {
+                    const prop = state.properties.find(p => p.id === v.propertyId);
+                    const address = prop ? prop.location : v.propertyTitle;
+                    const timeDisplay = `${new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${v.slot}`;
+                    return `
+                        <tr>
+                            <td><strong>${address}</strong></td>
+                            <td>${timeDisplay}</td>
+                            <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                        </tr>
+                    `;
+                }).join('');
             }
         } 
         
@@ -3704,18 +3893,26 @@ const UI = {
                     <th>Status</th>
                 </tr>
             `;
-            const relevantVisits = state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
+            const relevantVisits = state.siteVisits.filter(v => {
+                const prop = state.properties.find(p => p.id === v.propertyId);
+                return prop && prop.agent && prop.agent.email.toLowerCase() === email;
+            });
             if (relevantVisits.length === 0) {
                 t2Tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No visits scheduled.</td></tr>`;
             } else {
-                t2Tbody.innerHTML = relevantVisits.map(v => `
-                    <tr>
-                        <td><strong>${v.name}</strong></td>
-                        <td>${v.propertyAddress}</td>
-                        <td>${v.time}</td>
-                        <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
-                    </tr>
-                `).join('');
+                t2Tbody.innerHTML = relevantVisits.map(v => {
+                    const prop = state.properties.find(p => p.id === v.propertyId);
+                    const address = prop ? prop.location : v.propertyTitle;
+                    const timeDisplay = `${new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${v.slot}`;
+                    return `
+                        <tr>
+                            <td><strong>${v.customerName}</strong></td>
+                            <td>${address}</td>
+                            <td>${timeDisplay}</td>
+                            <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
+                        </tr>
+                    `;
+                }).join('');
             }
         }
     },
@@ -3747,42 +3944,7 @@ const UI = {
 
     // Visits Panel rendering
     renderVisitsPanel(user) {
-        const tbody = document.getElementById('panel-visits-tbody');
-        if (!tbody) return;
-
-        const isBuyer = user.role === 'Buyer';
-        const email = user.email.toLowerCase();
-
-        const list = isBuyer 
-            ? state.siteVisits.filter(v => v.name.toLowerCase() === user.name.toLowerCase())
-            : state.siteVisits.filter(v => v.agentEmail.toLowerCase() === email);
-
-        if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No scheduled visits found.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = list.map(v => {
-            let actionButtons = '';
-            if (!isBuyer) {
-                actionButtons = `
-                    <button class="btn-accent" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.approveVisit('${v.id}')">Approve</button>
-                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="UI.cancelVisit('${v.id}')">Decline</button>
-                `;
-            } else {
-                actionButtons = `<button class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color:var(--danger); color:var(--danger);" onclick="UI.cancelVisit('${v.id}')">Cancel Request</button>`;
-            }
-
-            return `
-                <tr>
-                    <td><strong>${v.name}</strong></td>
-                    <td>${v.propertyAddress}</td>
-                    <td>${v.time}</td>
-                    <td><span class="status-pill status-${v.status.toLowerCase()}">${v.status}</span></td>
-                    <td>${actionButtons}</td>
-                </tr>
-            `;
-        }).join('');
+        this.renderVisits();
     },
 
     // Follow-ups Panel rendering
@@ -3914,17 +4076,17 @@ const UI = {
         const visit = state.siteVisits.find(v => v.id === id);
         if (visit) {
             visit.status = 'Confirmed';
-            localStorage.setItem('lotlite_site_visits_db', JSON.stringify(state.siteVisits));
+            localStorage.setItem('lotlite_visit_bookings', JSON.stringify(state.siteVisits));
             this.renderVisits();
-            state.showNotification("Visit Approved", `Site visit request with ${visit.name} is confirmed.`);
+            state.showNotification("Visit Approved", `Site visit request with ${visit.customerName} is confirmed.`);
         }
     },
 
     cancelVisit(id) {
         const visit = state.siteVisits.find(v => v.id === id);
         if (visit) {
-            visit.status = 'Closed';
-            localStorage.setItem('lotlite_site_visits_db', JSON.stringify(state.siteVisits));
+            visit.status = 'Cancelled';
+            localStorage.setItem('lotlite_visit_bookings', JSON.stringify(state.siteVisits));
             this.renderVisits();
             state.showNotification("Visit Cancelled", `Visit request marked cancelled.`);
         }
@@ -4874,6 +5036,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const notifDropdown = document.getElementById('dashboard-notifications-dropdown');
         if (notifDropdown) notifDropdown.classList.remove('active');
     });
+
+    // P. Site Visit Booking Modal Form Submit & Close
+    const bookingForm = document.getElementById('booking-modal-form');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', (e) => {
+            UI.handleBookingSubmit(e);
+        });
+    }
+    const bookingCloseBtn = document.getElementById('booking-modal-close-btn');
+    if (bookingCloseBtn) {
+        bookingCloseBtn.addEventListener('click', () => {
+            UI.closeBookingModal();
+        });
+    }
+    const bookingOverlay = document.getElementById('booking-modal-overlay');
+    if (bookingOverlay) {
+        bookingOverlay.addEventListener('click', (e) => {
+            if (e.target === bookingOverlay) {
+                UI.closeBookingModal();
+            }
+        });
+    }
 
     // Initialize Router
     Router.init();
